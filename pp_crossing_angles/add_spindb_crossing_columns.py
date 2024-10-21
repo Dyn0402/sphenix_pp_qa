@@ -44,8 +44,7 @@ def add_columns(db_name):
 
         try:
             # Execute the psql command
-            # subprocess.run(psql_command, check=True)
-            print(psql_command)
+            subprocess.run(psql_command, check=True)
             print(f"Added column {column_name} to the spin table")
 
         except subprocess.CalledProcessError as e:
