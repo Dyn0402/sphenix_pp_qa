@@ -11,6 +11,8 @@ Created as sphenix_pp_qa/get_runs_start_end.py
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from datetime import datetime
+import pytz
 
 
 def main():
@@ -22,6 +24,9 @@ def main():
     # Define the rl1 and rl2 variables
     rl1 = 40000  # Start run number
     rl2 = ''  # End run number. Leave empty to get all runs from rl1 to the latest run
+
+    # Timezone for New York
+    ny_tz = pytz.timezone('America/New_York')
 
     # Construct the URL with the parameters
     base_url = "http://www.sphenix-intra.bnl.gov:7815/cgi-bin/run_info.py"
@@ -59,6 +64,19 @@ def main():
 
         # Drop the 'Trigger' and 'Zero Suppressed' columns
         df = df.drop(columns=['Trigger', 'Zero Suppressed'])
+
+        # Function to convert valid datetime strings to timezone-aware, or return NaT for invalid entries
+        def convert_to_timezone_aware(time_str):
+            try:
+                # Try to parse the datetime and localize it to New York timezone
+                return ny_tz.localize(pd.to_datetime(time_str))
+            except ValueError:
+                # If parsing fails, return NaT (Not a Time)
+                return pd.NaT
+
+        # Apply the conversion function to 'Start' and 'End' columns
+        df['Start'] = df['Start'].apply(convert_to_timezone_aware)
+        df['End'] = df['End'].apply(convert_to_timezone_aware)
 
         # Write the DataFrame to a CSV file
         df.to_csv('run_info.csv', index=False)
