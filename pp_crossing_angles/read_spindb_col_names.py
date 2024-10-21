@@ -14,15 +14,13 @@ import subprocess
 def main():
     # Database connection details
     db_name = 'spinDB'
-    user = 'your_username'
-    host = 'localhost'  # or the appropriate host
 
-    get_table_info(db_name, user, host)
+    get_table_info(db_name)
 
     print('donzo')
 
 
-def get_table_info(db_name, user, host):
+def get_table_info(db_name):
     # SQL query to get column information
     query = """
     SELECT column_name, data_type, is_nullable 
@@ -34,8 +32,6 @@ def get_table_info(db_name, user, host):
     psql_command = [
         'psql',
         '-d', db_name,
-        '-U', user,
-        '-h', host,
         '-c', query
     ]
 
