@@ -12,25 +12,25 @@ void PrintRunParameters(SpinDBContent &spin_content) {
     std::cout << "Bad Run: " << spin_content.GetBadRunFlag() << std::endl;
 
     // Get spin patterns
-    int bluespin[120] = {0};
-    int yellspin[120] = {0};
-    std::cout << "Blue spin pattern: [";
-    for (int i = 0; i < 120; i++)
-    {
-    bluespin[i] = spin_content.GetSpinPatternBlue(i);
-    std::cout << bluespin[i];
-    if (i < 119)std::cout << ", ";
-    }
-    std::cout << "]" << std::endl;
-
-    std::cout << "Yellow spin pattern: [";
-    for (int i = 0; i < 120; i++)
-    {
-    yellspin[i] = spin_content.GetSpinPatternYellow(i);
-    std::cout << yellspin[i];
-    if (i < 119)std::cout << ", ";
-    }
-    std::cout << "]" << std::endl;
+//    int bluespin[120] = {0};
+//    int yellspin[120] = {0};
+//    std::cout << "Blue spin pattern: [";
+//    for (int i = 0; i < 120; i++)
+//    {
+//    bluespin[i] = spin_content.GetSpinPatternBlue(i);
+//    std::cout << bluespin[i];
+//    if (i < 119)std::cout << ", ";
+//    }
+//    std::cout << "]" << std::endl;
+//
+//    std::cout << "Yellow spin pattern: [";
+//    for (int i = 0; i < 120; i++)
+//    {
+//    yellspin[i] = spin_content.GetSpinPatternYellow(i);
+//    std::cout << yellspin[i];
+//    if (i < 119)std::cout << ", ";
+//    }
+//    std::cout << "]" << std::endl;
 
 //    std::cout << "Cross Angle: " << spin_content.GetCrossAngle() << std::endl;
 //    std::cout << "Cross Angle Std: " << spin_content.GetCrossAngleStd() << std::endl;
