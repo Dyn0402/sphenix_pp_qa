@@ -47,17 +47,11 @@ int spindb_test() {
         SpinDBOutput spin_output("phnxrc");
         SpinDBContent spin_content;
 
-        spin_output.StoreDBContent(run_number,run_number,qa_level);
-        spin_output.GetDBContentStore(spin_content,run_number);
+//        spin_output.StoreDBContent(run_number, run_number, qa_level);
+//        spin_output.GetDBContentStore(spin_content,run_number);
 
-        odbc::ResultSet *rs = spin_output.GetResultSetForRun(run_number); // Assuming this method exists
-        if (rs != nullptr) {
-            spin_output.GetDBContent(spin_content, rs);
-            PrintRunParameters(spin_content);
-            delete rs;
-        } else {
-            std::cout << "Failed to retrieve data for run number: " << run_number << std::endl;
-        }
+        spin_output.GetDBContent(spin_content, run_number, qa_level);
+        PrintRunParameters(spin_content);
     }
 
     return 0;
