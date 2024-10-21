@@ -5,7 +5,7 @@
 #include <uspin/SpinDBOutput.h>
 
 
-void PrintRunParameters(SpinDBContent &spin_content, bool get_crossing_angle_info = false) {
+void PrintRunParameters(SpinDBContent &spin_content) {
     std::cout << "Run Number: " << spin_content.GetRunNumber() << std::endl;
     std::cout << "QA Level: " << spin_content.GetQALevel() << std::endl;
     std::cout << "Fill Number: " << spin_content.GetFillNumber() << std::endl;
@@ -32,31 +32,28 @@ void PrintRunParameters(SpinDBContent &spin_content, bool get_crossing_angle_inf
     }
     std::cout << "]" << std::endl;
 
-    if (get_crossing_angle_info) {
-        std::cout << "Cross Angle: " << spin_content.GetCrossAngle() << std::endl;
-        std::cout << "Cross Angle Std: " << spin_content.GetCrossAngleStd() << std::endl;
-        std::cout << "Cross Angle Min: " << spin_content.GetCrossAngleMin() << std::endl;
-        std::cout << "Cross Angle Max: " << spin_content.GetCrossAngleMax() << std::endl;
-    }
+//    std::cout << "Cross Angle: " << spin_content.GetCrossAngle() << std::endl;
+//    std::cout << "Cross Angle Std: " << spin_content.GetCrossAngleStd() << std::endl;
+//    std::cout << "Cross Angle Min: " << spin_content.GetCrossAngleMin() << std::endl;
+//    std::cout << "Cross Angle Max: " << spin_content.GetCrossAngleMax() << std::endl;
 }
 
 int spindb_test() {
     std::vector<int> run_numbers = {42581, 45409, 49307, 51337, 54280};
-    bool read_crossing_angle_info = false;
 
     unsigned int qa_level = 0xffff;
 
     for (int run_number : run_numbers) {
-        SpinDBOutput dbOutput("phnxrc");
+        SpinDBOutput spin_output("phnxrc");
         SpinDBContent spin_content;
 
-        spin_out.StoreDBContent(run_number,run_number,qa_level);
-        spin_out.GetDBContentStore(spin_content,run_number);
+        spin_output.StoreDBContent(run_number,run_number,qa_level);
+        spin_output.GetDBContentStore(spin_content,run_number);
 
-        odbc::ResultSet *rs = dbOutput.GetResultSetForRun(run_number); // Assuming this method exists
+        odbc::ResultSet *rs = spin_output.GetResultSetForRun(run_number); // Assuming this method exists
         if (rs != nullptr) {
-            dbOutput.GetDBContent(spin_content, rs);
-            PrintRunParameters(spin_content, read_crossing_angle_info);
+            spin_output.GetDBContent(spin_content, rs);
+            PrintRunParameters(spin_content);
             delete rs;
         } else {
             std::cout << "Failed to retrieve data for run number: " << run_number << std::endl;
