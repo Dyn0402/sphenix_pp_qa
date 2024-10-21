@@ -37,6 +37,15 @@ def update_database(db_name, df):
         crossing_angle_min = row['relative_min']
         crossing_angle_max = row['relative_max']
 
+        if crossing_angle == 'nan':
+            crossing_angle = 'NULL'
+        if crossing_angle_std == 'nan':
+            crossing_angle_std = 'NULL'
+        if crossing_angle_min == 'nan':
+            crossing_angle_min = 'NULL'
+        if crossing_angle_max == 'nan':
+            crossing_angle_max = 'NULL'
+
         # SQL command to update the row for the specific run_number
         update_query = f"""
         UPDATE spin
