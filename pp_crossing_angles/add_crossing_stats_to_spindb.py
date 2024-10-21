@@ -8,6 +8,7 @@ Created as sphenix_pp_qa/add_crossing_stats_to_spindb.py
 @author: Dylan Neff, Dylan
 """
 
+import numpy as np
 import pandas as pd
 import subprocess
 
@@ -37,13 +38,13 @@ def update_database(db_name, df):
         crossing_angle_min = row['relative_min']
         crossing_angle_max = row['relative_max']
 
-        if crossing_angle == 'nan':
+        if np.isnan(crossing_angle):
             crossing_angle = 'NULL'
-        if crossing_angle_std == 'nan':
+        if np.isnan(crossing_angle_std):
             crossing_angle_std = 'NULL'
-        if crossing_angle_min == 'nan':
+        if np.isnan(crossing_angle_min):
             crossing_angle_min = 'NULL'
-        if crossing_angle_max == 'nan':
+        if np.isnan(crossing_angle_max):
             crossing_angle_max = 'NULL'
 
         # SQL command to update the row for the specific run_number
