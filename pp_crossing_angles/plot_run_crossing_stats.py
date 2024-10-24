@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.dates as mdates
+from matplotlib.ticker import FuncFormatter, ScalarFormatter
 from datetime import datetime
 
 def main():
@@ -92,24 +93,89 @@ def plot_run_duration_hist(run_crossing_df, cut_val=None):
 
 def plot_run_duration_num_events_2d(run_crossing_df):
     """
-    Scatter plot of num events on y and run duration on x
+    Scatter plot of num events on y and run duration on x. In addition, plot a vertical event_number density histogram
+    on the right and a horizontal run_duration density histogram on the top, weighted by the number of events, and
+    normalized to show percentages.
     :param run_crossing_df:
     :return:
     """
     rate_lines_khz = [10, 5, 2]
     colors = ['red', 'orange', 'green']
     x_lims = [0, 79]
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.scatter(run_crossing_df['duration'] / 60, run_crossing_df['num_events'], s=4, alpha=0.3)
-    for i, rate in enumerate(rate_lines_khz):  # Plot diagonal lines for constant rates
-        ax.plot(x_lims, np.array(x_lims) * rate * 60 * 1e3, ls='--', c=colors[i], alpha=0.5, label=f'{rate} kHz', zorder=0)
+
+    # Total number of events for normalization
+    total_events = run_crossing_df['num_events'].sum()
+
+    # Create main plot with scatter
+    fig, ax = plt.subplots(figsize=(8, 4))
+    scatter = ax.scatter(run_crossing_df['duration'] / 60, run_crossing_df['num_events'], s=4, alpha=0.3)
+
+    # Plot diagonal lines for constant rates
+    for i, rate in enumerate(rate_lines_khz):
+        ax.plot(x_lims, np.array(x_lims) * rate * 60 * 1e3, ls='--', c=colors[i], alpha=0.5, label=f'{rate} kHz',
+                zorder=0)
+
+    # Set scientific notation for y-axis with `4e5` style
+
     ax.set_xlabel('Run Duration (minutes)')
     ax.set_ylabel('Number of Events')
-    ax.set_title('Number of Events vs Run Duration')
     ax.set_xlim(x_lims)
     ax.set_ylim(bottom=0)
     ax.legend()
+
+    # Place title inside the plot area
+    ax.text(0.45, 0.95, 'Number of Events vs Run Duration', horizontalalignment='center', verticalalignment='center',
+            transform=ax.transAxes, fontsize=12)
+
+    # Create inset axis for rotated histogram on the right (weighted by number of events and normalized to percentage)
+    ax_hist_right = ax.inset_axes([1.01, 0.0, 0.2, 1.0])  # [left, bottom, width, height]
+    num_event_binning = np.linspace(*ax.get_ylim(), 50)
+    counts_right, bins_right, _ = ax_hist_right.hist(run_crossing_df['num_events'], bins=num_event_binning,
+                                                     orientation='horizontal', color='black', alpha=0.8,
+                                                     weights=run_crossing_df['num_events'], density=False)
+
+    # Convert counts to percentages
+    counts_right_percentage = counts_right / total_events * 100
+    ax_hist_right.clear()  # Clear and replot with percentages
+    ax_hist_right.barh(bins_right[:-1], counts_right_percentage, height=np.diff(bins_right), color='black', alpha=0.8)
+    ax_hist_right.set_ylim(*ax.get_ylim())
+    ax_hist_right.set_yticks([])
+    # ax_hist_right.set_xlabel('%')
+
+    # Create inset axis for horizontal histogram on the top (weighted by number of events and normalized to percentage)
+    ax_hist_top = ax.inset_axes([0.0, 1.01, 1.0, 0.2])  # [left, bottom, width, height]
+    duration_binning = np.linspace(*ax.get_xlim(), 50)
+    counts_top, bins_top, _ = ax_hist_top.hist(run_crossing_df['duration'] / 60, bins=duration_binning,
+                                               orientation='vertical', color='black', alpha=0.8,
+                                               weights=run_crossing_df['num_events'], density=False)
+
+    # Convert counts to percentages
+    counts_top_percentage = counts_top / total_events * 100
+    ax_hist_top.clear()  # Clear and replot with percentages
+    ax_hist_top.bar(bins_top[:-1], counts_top_percentage, width=np.diff(bins_top), color='black', alpha=0.8)
+    ax_hist_top.set_xlim(*ax.get_xlim())
+    ax_hist_top.set_xticks([])
+    # ax_hist_top.set_ylabel('%')
+
+    # Function to format axis labels in scientific notation
+    def sci_notation_formatter(x, pos):
+        exp_format = f'{x:.0e}'  # Basic scientific notation
+        exp_format = exp_format.replace('e+0', 'e').replace('e+', 'e').replace('e0', 'e')
+        if x == 0:
+            exp_format = '0'
+        return exp_format
+
+    # Function to format ticks as percentages
+    def percent_formatter(x, pos):
+        return f'{int(x)}%'  # Convert to percentage and add '%' symbol
+
+    # Apply the percentage formatter to the right histogram y-axis and top histogram x-axis
+    ax_hist_right.xaxis.set_major_formatter(FuncFormatter(percent_formatter))  # Right histogram
+    ax_hist_top.yaxis.set_major_formatter(FuncFormatter(percent_formatter))  # Top histogram
+    ax.yaxis.set_major_formatter(FuncFormatter(sci_notation_formatter))  # Y-axis of the main plot
+
     fig.tight_layout()
+    plt.show()
 
 
 def plot_crossing_vs_time(run_crossing_df, period_boundaries=None):
