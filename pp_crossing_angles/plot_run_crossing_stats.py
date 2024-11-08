@@ -79,7 +79,7 @@ def plot_from_spin_db_csv(crossing_angle_period_boundaries):
     spin_db_csv = '../spin_db.csv'
     run_info_csv = 'run_info.csv'
     out_dir = 'C:/Users/Dylan/Desktop/pp_crossing_angles/Analysis/Weird_Crossing_Runs/'
-    plot_weird_runs = True
+    plot_weird_runs = False
 
     spin_db_df = pd.read_csv(spin_db_csv)
     run_info_df = pd.read_csv(run_info_csv)
@@ -97,6 +97,13 @@ def plot_from_spin_db_csv(crossing_angle_period_boundaries):
 
     spin_db_df = spin_db_df[spin_db_df['Events'] > 1]  # Important!!!
     spin_db_df = spin_db_df[spin_db_df['badrunqa'] == 0]
+
+    spin_db_df['num_events'] = spin_db_df['Events']
+    spin_db_df['duration'] = (pd.to_datetime(spin_db_df['End']) - pd.to_datetime(spin_db_df['Start'])).dt.total_seconds()
+
+    plot_num_events_hist(spin_db_df)
+    plot_run_duration_hist(spin_db_df)
+    plot_run_duration_num_events_2d(spin_db_df)
 
     spin_db_df['mid'] = pd.to_datetime(spin_db_df['Start']) + (pd.to_datetime(spin_db_df['End']) - pd.to_datetime(spin_db_df['Start'])) / 2
 
@@ -123,8 +130,15 @@ def plot_from_spin_db_csv(crossing_angle_period_boundaries):
     # Sort on run number
     spin_db_df = spin_db_df.sort_values('run')
 
-    plot_crossing_vs_time(spin_db_df, crossing_angle_period_boundaries, ls='None')
+    plot_crossing_vs_time(spin_db_df, crossing_angle_period_boundaries, ls='None', vernier_scan_runs=vernier_scan_runs)
     plot_rel_crossing_angle_std_hist(spin_db_df)
+
+    good_spin_db_df = spin_db_df[spin_db_df['relative_std'] < 0.1]
+    plot_crossing_vs_time(good_spin_db_df, crossing_angle_period_boundaries, ls='None', vernier_scan_runs=vernier_scan_runs)
+
+    # good_spin_db_df = good_spin_db_df[good_spin_db_df['duration'] > 60 * 4]
+    # plot_crossing_vs_time(good_spin_db_df, crossing_angle_period_boundaries, ls='None',
+    #                       vernier_scan_runs=vernier_scan_runs)
 
     if plot_weird_runs:
         plot_full_run_crossing_angles(weird_runs['runnumber'], spin_db_df, out_dir)
@@ -315,20 +329,22 @@ def plot_run_duration_num_events_2d(run_crossing_df):
     ax.yaxis.set_major_formatter(FuncFormatter(sci_notation_formatter))  # Y-axis of the main plot
 
     fig.tight_layout()
-    plt.show()
 
 
-def plot_crossing_vs_time(run_crossing_df, period_boundaries=None, ls='-'):
+def plot_crossing_vs_time(run_crossing_df, period_boundaries=None, ls='-', vernier_scan_runs=None):
     """
     Plot crossing angles vs time. Plot mid date on x axis and mean crossing angles on y axis with std as error bars.
     :param run_crossing_df:
     :param period_boundaries:
     :param ls:
+    :param vernier_scan_runs:
     :return:
     """
     run_crossing_df.loc[:, 'mid'] = pd.to_datetime(run_crossing_df['mid'])
     # Ensure the 'mid' column in the DataFrame is timezone-naive
     run_crossing_df['mid'] = run_crossing_df['mid'].dt.tz_localize(None)
+    if vernier_scan_runs:
+        df_vernier_scan = run_crossing_df[run_crossing_df['run'].isin(vernier_scan_runs)]
 
     if 'blue_mean' in run_crossing_df.columns:
         fig_all, ax_all = plt.subplots(figsize=(12, 6))
@@ -375,18 +391,22 @@ def plot_crossing_vs_time(run_crossing_df, period_boundaries=None, ls='-'):
     fig_rel, ax_rel = plt.subplots(figsize=(12, 6))
     ax_rel.plot(run_crossing_df['mid'], run_crossing_df['relative_mean'], color='green', ls=ls, alpha=0.4)
     ax_rel.errorbar(run_crossing_df['mid'], run_crossing_df['relative_mean'], yerr=run_crossing_df['relative_std'],
-                    color='green', label='Relative', marker='.', markersize=3, ls='None')
+                    color='green', label='Relative Crossing Angle', marker='.', markersize=3, ls='None')
     # Plot the relative_min and relative_max as lighter error bars
     ax_rel.errorbar(run_crossing_df['mid'], run_crossing_df['relative_mean'],
                     yerr=[run_crossing_df['relative_mean'] - run_crossing_df['relative_min'],
                           run_crossing_df['relative_max'] - run_crossing_df['relative_mean']],
                     color='green', alpha=0.2, ls='None')
+    if vernier_scan_runs:
+        ax_rel.plot(df_vernier_scan['mid'], df_vernier_scan['relative_mean'], color='red', ls='None', marker='x',
+                    markersize=6, zorder=10, label='Vernier Scan')
     ax_rel.axhline(0, ls='-', alpha=0.3, color='black')
     if period_boundaries:
         for boundary in period_boundaries:
             ax_rel.axvline(boundary, ls='--', color='red', alpha=0.5, zorder=0)
     ax_rel.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
     ax_rel.set_ylabel('Crossing Angle (mrad)')
+    ax_rel.legend()
 
     ax_rel_run = ax_rel.secondary_xaxis('top')  # Add a secondary x-axis at the top
     xticks_dates = ax_rel.get_xticks()
