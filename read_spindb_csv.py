@@ -29,6 +29,12 @@ def main():
     print(non_phys_runs.head())
 
     spin_db_df = spin_db_df[spin_db_df['Type'] == 'physics']
+    spin_db_df = spin_db_df[spin_db_df['badrunqa'] == 0]
+
+    print(spin_db_df['badrunqa'])
+    # Get all unique values of badrunqa
+    print(spin_db_df['badrunqa'].unique())
+    # input('Enter to continue')
 
     # Get distinct blue and yellow spin patterns
     blue_fill_patterns = spin_db_df['spinpatternblue'].unique()
@@ -74,6 +80,13 @@ def main():
                    else -999 for x in blue_fill_pattern_counts.index]
     yellow_labels = [ast.literal_eval(x).count(1) + ast.literal_eval(x).count(-1) if -999 not in ast.literal_eval(x)
                      else -999 for x in yellow_fill_pattern_counts.index]
+
+    # To each blue and yellow label, append the first 4 elements of the fill pattern index to differentiate between
+    # patterns with the same number of ones
+    blue_labels = [f'{label} - [{",".join([str(x) for x in ast.literal_eval(blue_fill_pattern_counts.index[i])][:4])}]' if label != -999 else 'No Data'
+                     for i, label in enumerate(blue_labels)]
+    yellow_labels = [f'{label} - [{",".join([str(x) for x in ast.literal_eval(yellow_fill_pattern_counts.index[i])][:4])}]' if label != -999 else 'No Data'
+                        for i, label in enumerate(yellow_labels)]
 
 
     # Plot histograms as bar graphs
@@ -140,17 +153,19 @@ def main():
     ax_top.bar(range(len(yellow_fill_pattern_hist)), yellow_fill_pattern_hist, color='orange')
     ax_top.set_yticks([])  # Remove y-tick labels on the top histogram
     ax_top.set_xticks([])  # Remove x-tick labels on the top histogram
+    ax_top.set_ylabel('Yellow Runs')
 
     # Plot 1D histogram for the y-axis (right histogram) with aligned axes
     ax_right = fig.add_subplot(gs[1, 1], sharey=ax_main, zorder=0)
     ax_right.barh(range(len(blue_fill_pattern_hist)), blue_fill_pattern_hist, color='blue')
     ax_right.set_yticks([])  # Remove y-tick labels on the right histogram
     ax_right.set_xticks([])  # Remove x-tick labels on the right histogram
+    ax_right.set_xlabel('Blue Runs')
 
     # Colorbar as its own subplot below the main plot
     cbar_ax = fig.add_subplot(gs[3, 0:1])
     cbar = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')
-    cbar.set_label('Counts')  # Label for color bar
+    cbar.set_label('Runs')  # Label for color bar
 
     # Set x and y ticks with labels
     blue_2d_labels = [f'{label}' for label in blue_labels]
