@@ -36,6 +36,37 @@ def main():
     print(spin_db_df['badrunqa'].unique())
     # input('Enter to continue')
 
+    # plot_spin_patterns(spin_db_df)
+    plot_crossing_angles(spin_db_df)
+
+    print('donzo')
+
+
+def plot_crossing_angles(spin_db_df):
+    """
+    Plot crossing angles vs run number
+    :param spin_db_df:
+    :return:
+    """
+
+    # Get crossing angles and stds
+    crossing_angles, crossing_angle_stds = spin_db_df['crossingangle'], spin_db_df['crossanglestd']
+
+    # Get run numbers
+    run_numbers = spin_db_df['runnumber']
+    start_time, end_time = spin_db_df['Start'], spin_db_df['End']
+
+    # Plot crossing angles
+    fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+    ax.errorbar(run_numbers, crossing_angles, yerr=crossing_angle_stds, fmt='o', color='green')
+    ax.set_xlabel('Run Number')
+    ax.set_ylabel('Crossing Angle [mrad]')
+    ax.set_title('Crossing Angles vs Run Number')
+    ax.grid(True)
+    plt.show()
+
+
+def plot_spin_patterns(spin_db_df):
     # Get distinct blue and yellow spin patterns
     blue_fill_patterns = spin_db_df['spinpatternblue'].unique()
     yellow_fill_patterns = spin_db_df['spinpatternyellow'].unique()
@@ -180,7 +211,6 @@ def main():
     fig.subplots_adjust(hspace=0.0, wspace=0.0)
     plt.show()
 
-    print('donzo')
 
 
 if __name__ == '__main__':
