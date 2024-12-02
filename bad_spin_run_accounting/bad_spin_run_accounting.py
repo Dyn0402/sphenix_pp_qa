@@ -30,7 +30,7 @@ def main():
     blue_spin_patterns, yellow_spin_patterns = read_spin_patterns(blue_spin_patterns_path, yellow_spin_patterns_path)
 
     # plot_bad_runs(spin_db_df, blue_spin_patterns, yellow_spin_patterns)
-    check_polarizations(spin_db_df)
+    spin_db_df = check_polarizations(spin_db_df)
     count_events(spin_db_df)
     plt.show()
 
@@ -122,6 +122,8 @@ def count_events(df):
     spin_pattern_df = characterize_spin_patterns(df_spin_phys)
     event_dict.update({'111x111': np.sum(df_spin_phys[(df_spin_phys['blue_bunch_num'] == 111) & (df_spin_phys['yellow_bunch_num'] == 111)]['Events'])})
 
+    event_dict.update({'111x111 good pol': np.sum(df_spin_phys[(df_spin_phys['blue_bunch_num'] == 111) & (df_spin_phys['yellow_bunch_num'] == 111) & (df_spin_phys['bad_blue_pol'] == 0) & (df_spin_phys['bad_yellow_pol'] == 0)]['Events'])})
+
     event_dict.update({'badrunqa=0': np.sum(df_spin_phys[df_spin_phys['badrunqa'] == 0]['Events'])})
     print(f'Badrunqa=0 events: {event_dict["badrunqa=0"]}')
 
@@ -175,7 +177,9 @@ def count_events(df):
     bad_run_all_dict = {
         'badrunqa=1': np.sum(df_badqa['Events']),
         'non-111x111': np.sum(df_badqa_non_111['Events']),
-        '111x111': np.sum(df_badqa_111['Events'])
+        '111x111': np.sum(df_badqa_111['Events']),
+        'Good Polarizations': np.sum(df_badqa[(df_badqa['bad_blue_pol'] == 0) & (df_badqa['bad_yellow_pol'] == 0)]['Events']),
+        'Bad Polarizations': np.sum(df_badqa[(df_badqa['bad_blue_pol'] == 1) | (df_badqa['bad_yellow_pol'] == 1)]['Events'])
     }
     plot_event_count_dict(bad_run_all_dict, fontsize=12, title='Badrunqa=1 All Spin Patterns')
 
@@ -353,6 +357,57 @@ def characterize_spin_patterns(spin_db_df):
 
 
 def check_polarizations(df):
+    """
+    Check the polarizations and ensure all are within reasonable bounds.
+    polarblue and polaryellow are lists formatted as strings. Convert to floats and check for any values outside of
+    reasonable bounds.
+    :param df:
+    :return:
+    """
+    # Convert polarizations to floats
+    df.loc[:, 'polarblue'] = df['polarblue'].apply(lambda x: ast.literal_eval(x))
+    df.loc[:, 'polaryellow'] = df['polaryellow'].apply(lambda x: ast.literal_eval(x))
+
+    df_phys = df[df['Type'] == 'physics']
+    df_spin_phys = df_phys[df_phys['runnumber'] >= 45235]
+
+    # Flatten the lists of polarizations and histogram them for blue and yellow separately
+    # blue_polarizations = [x for sublist in df_spin_phys['polarblue'] for x in sublist]
+    # yellow_polarizations = [x for sublist in df_spin_phys['polaryellow'] for x in sublist]
+
+    # fig_blue_pol, ax_blue_pol = plt.subplots(1, 1, figsize=(12, 6))
+    # fig_yellow_pol, ax_yellow_pol = plt.subplots(1, 1, figsize=(12, 6))
+    # ax_blue_pol.hist(blue_polarizations, bins=50)
+    # ax_yellow_pol.hist(yellow_polarizations, bins=50)
+    # ax_blue_pol.set_title('Blue Polarizations')
+    # ax_yellow_pol.set_title('Yellow Polarizations')
+    # ax_blue_pol.set_xlabel('Polarization')
+    # ax_yellow_pol.set_xlabel('Polarization')
+    # fig_blue_pol.tight_layout()
+    # fig_yellow_pol.tight_layout()
+
+    # Find runs with any polarization less than 0 or greater than 100
+    bad_blue_pol = df_spin_phys[df_spin_phys['polarblue'].apply(lambda x: any([pol < 0 or pol > 100 for pol in x]))]
+    bad_yellow_pol = df_spin_phys[df_spin_phys['polaryellow'].apply(lambda x: any([pol < 0 or pol > 100 for pol in x]))]
+
+    # Print the bad runs
+    print('Bad Blue Polarizations:')
+    print(bad_blue_pol[['runnumber', 'polarblue']])
+
+    print('Bad Yellow Polarizations:')
+    print(bad_yellow_pol[['runnumber', 'polaryellow']])
+
+    # Find runs with any polarization less than 0 or greater than 100 in all runs
+    bad_blue_pol = df_spin_phys[df['polarblue'].apply(lambda x: any([pol < 0 or pol > 100 for pol in x]))]
+    bad_yellow_pol = df_spin_phys[df['polaryellow'].apply(lambda x: any([pol < 0 or pol > 100 for pol in x]))]
+
+    # Make a new column for bad blue and bad yellow polarizations in df
+    df.loc[:, 'bad_blue_pol'] = 0
+    df.loc[:, 'bad_yellow_pol'] = 0
+    df.loc[df['runnumber'].isin(bad_blue_pol['runnumber']), 'bad_blue_pol'] = 1
+    df.loc[df['runnumber'].isin(bad_yellow_pol['runnumber']), 'bad_yellow_pol'] = 1
+
+    return df
 
 
 def plot_events_vs_time(df):
