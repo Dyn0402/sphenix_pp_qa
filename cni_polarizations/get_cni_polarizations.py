@@ -23,7 +23,7 @@ def main():
 
 
 def get_from_site_csv():
-    url = 'https://www.cnipol.bnl.gov/fills/?rp=24&fn=&ft=&be=&mode=11&sb=Select'
+    url = 'https://www.cnipol.bnl.gov/fills/s/?rp=24&fn=&ft=&be=&mode=11&sb=Select'
     reread = False  # If True, reread file even if it exists
     html_file_path = 'cnipol_fills.html'
     df_out_path = 'cnipol_fills.csv'
