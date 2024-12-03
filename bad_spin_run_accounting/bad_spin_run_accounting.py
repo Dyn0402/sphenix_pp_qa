@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
+from numpy.ma.core import append
 
 
 def main():
@@ -100,115 +101,260 @@ def plot_bad_runs(spin_db_df, blue_spin_patterns, yellow_spin_patterns):
     characterize_spin_patterns(bad_physics_runs)
 
 
-def count_events(df):
+# def count_events(df):
+#     """
+#     Count the number of events in each run as cuts are made
+#     :param df:
+#     :return:
+#     """
+#     event_dict = {}
+#
+#     event_dict.update({'original': np.sum(df['Events'])})
+#     print(f'Original events: {event_dict["original"]}')
+#
+#     df_phys = df[df['Type'] == 'physics']
+#     event_dict.update({'physics': np.sum(df_phys['Events'])})
+#     print(f'Physics events: {event_dict["physics"]}')
+#
+#     df_spin_phys = df_phys[df_phys['runnumber'] >= 45235]
+#     event_dict.update({'spin_phys': np.sum(df_spin_phys['Events'])})
+#     print(f'Spin physics events: {event_dict["spin_phys"]}')
+#
+#     spin_pattern_df = characterize_spin_patterns(df_spin_phys)
+#     event_dict.update({'111x111': np.sum(df_spin_phys[(df_spin_phys['blue_bunch_num'] == 111) & (df_spin_phys['yellow_bunch_num'] == 111)]['Events'])})
+#
+#     event_dict.update({'111x111 good pol': np.sum(df_spin_phys[(df_spin_phys['blue_bunch_num'] == 111) & (df_spin_phys['yellow_bunch_num'] == 111) & (df_spin_phys['bad_blue_pol'] == 0) & (df_spin_phys['bad_yellow_pol'] == 0)]['Events'])})
+#
+#     event_dict.update({'badrunqa=0': np.sum(df_spin_phys[df_spin_phys['badrunqa'] == 0]['Events'])})
+#     print(f'Badrunqa=0 events: {event_dict["badrunqa=0"]}')
+#
+#     plot_event_count_dict(event_dict)
+#
+#     spin_pattern_dict = {}
+#     # Sum the number of events for each unique combined_fill_pattern_label and add to the spin_pattern_dict
+#     for pattern in spin_pattern_df['combined_fill_pattern_label2'].unique():
+#         spin_pattern_dict.update({pattern: np.sum(spin_pattern_df[spin_pattern_df['combined_fill_pattern_label2'] == pattern]['Events'])})
+#
+#     plot_event_count_dict(spin_pattern_dict, fontsize=10, title='All Physics+Spin Spin Patterns')
+#
+#     good_event_spin_pattern_dict = {}
+#     df_goodqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 0]
+#
+#     # Sum the number of events for each unique combined_fill_pattern_label and add to the good_event_spin_pattern_dict
+#     for pattern in df_goodqa['combined_fill_pattern_label2'].unique():
+#         good_event_spin_pattern_dict.update({pattern: np.sum(df_goodqa[df_goodqa['combined_fill_pattern_label2'] == pattern]['Events'])})
+#
+#     print(f'Badrunqa=0 events: {np.sum(df_goodqa["Events"])}')
+#     print(f'Sum of good_event_spin_pattern_dict events: {np.sum(list(good_event_spin_pattern_dict.values()))}')
+#
+#     plot_event_count_dict(good_event_spin_pattern_dict, fontsize=12, title='Badrunqa=0 Spin Patterns')
+#
+#     bad_run_spin_pattern_dict = {}
+#     df_badqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 1]
+#     # bad_run_spin_pattern_dict.update({'badrunqa=1': np.sum(df_badqa['Events'])})
+#
+#     # Sum the number of events for each unique combined_fill_pattern_label and add to the bad_run_spin_pattern_dict
+#     for pattern in df_badqa['combined_fill_pattern_label2'].unique():
+#         bad_run_spin_pattern_dict.update({pattern: np.sum(df_badqa[df_badqa['combined_fill_pattern_label2'] == pattern]['Events'])})
+#
+#     print(f'Badrunqa=1 events: {np.sum(df_badqa["Events"])}')
+#     print(f'Sum of bad_run_spin_pattern_dict events: {np.sum(list(bad_run_spin_pattern_dict.values()))}')
+#
+#     plot_event_count_dict(bad_run_spin_pattern_dict, fontsize=12, title='Badrunqa=1 Spin Patterns')
+#
+#     bad_run_non_111_dict = {}
+#     df_badqa_non_111 = df_badqa[(df_badqa['blue_bunch_num'] != 111) | (df_badqa['yellow_bunch_num'] != 111)]
+#
+#     # Sum the number of events for each unique combined_fill_pattern_label and add to the bad_run_non_111_dict
+#     for pattern in df_badqa_non_111['combined_fill_pattern_label2'].unique():
+#         bad_run_non_111_dict.update({pattern: np.sum(df_badqa_non_111[df_badqa_non_111['combined_fill_pattern_label2'] == pattern]['Events'])})
+#
+#     print(f'Badrunqa=1 non-111 events: {np.sum(df_badqa_non_111["Events"])}')
+#
+#     plot_event_count_dict(bad_run_non_111_dict, fontsize=12, title='Badrunqa=1 Non-111x111 Spin Patterns')
+#
+#     df_badqa_111 = df_badqa[(df_badqa['blue_bunch_num'] == 111) & (df_badqa['yellow_bunch_num'] == 111)]
+#
+#     bad_run_all_dict = {
+#         'badrunqa=1': np.sum(df_badqa['Events']),
+#         'non-111x111': np.sum(df_badqa_non_111['Events']),
+#         '111x111': np.sum(df_badqa_111['Events']),
+#         'Good Polarizations': np.sum(df_badqa[(df_badqa['bad_blue_pol'] == 0) & (df_badqa['bad_yellow_pol'] == 0)]['Events']),
+#         'Bad Polarizations': np.sum(df_badqa[(df_badqa['bad_blue_pol'] == 1) | (df_badqa['bad_yellow_pol'] == 1)]['Events'])
+#     }
+#     plot_event_count_dict(bad_run_all_dict, fontsize=12, title='Badrunqa=1 All Spin Patterns')
+#
+#
+#
+# def plot_event_count_dict(event_dict, fontsize=14, title=None):
+#     """
+#     Plot the event count dictionary as a horizontal bar chart
+#     :param event_dict:
+#     :param fontsize:
+#     :param title:
+#     :return:
+#     """
+#     # Plot these event counts as a horizontal bar chart
+#     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+#     event_dict = dict(sorted(event_dict.items(), key=lambda item: item[1]))  # Sort the dictionary so original at top
+#     ax.barh(list(event_dict.keys()), list(event_dict.values()))
+#     max_val = max(event_dict.values())
+#     for i, v in enumerate(event_dict.values()):  # Write the number of events on the bars in green
+#         if v > 0.2 * max_val:
+#             ax.text(v, i, f'{int(v):.2e}  ', color='white', va='center', ha='right', fontweight='bold',
+#                     fontsize=fontsize)
+#         else:
+#             ax.text(v, i, f'  {int(v):.2e}', color='black', va='center', ha='left', fontweight='bold',
+#                     fontsize=fontsize)
+#     if title:
+#         ax.set_title(title)
+#     ax.set_xlabel('Number of Events')
+#     fig.tight_layout()
+
+
+def append_counts(counts_dict, df, key):
     """
-    Count the number of events in each run as cuts are made
-    :param df:
-    :return:
+    Append the number of events and runs for a given DataFrame and key.
+    :param counts_dict: Dictionary to store counts.
+    :param df: Filtered DataFrame.
+    :param key: Key to label this filter.
     """
-    event_dict = {}
-
-    event_dict.update({'original': np.sum(df['Events'])})
-    print(f'Original events: {event_dict["original"]}')
-
-    df_phys = df[df['Type'] == 'physics']
-    event_dict.update({'physics': np.sum(df_phys['Events'])})
-    print(f'Physics events: {event_dict["physics"]}')
-
-    df_spin_phys = df_phys[df_phys['runnumber'] >= 45235]
-    event_dict.update({'spin_phys': np.sum(df_spin_phys['Events'])})
-    print(f'Spin physics events: {event_dict["spin_phys"]}')
-
-    spin_pattern_df = characterize_spin_patterns(df_spin_phys)
-    event_dict.update({'111x111': np.sum(df_spin_phys[(df_spin_phys['blue_bunch_num'] == 111) & (df_spin_phys['yellow_bunch_num'] == 111)]['Events'])})
-
-    event_dict.update({'111x111 good pol': np.sum(df_spin_phys[(df_spin_phys['blue_bunch_num'] == 111) & (df_spin_phys['yellow_bunch_num'] == 111) & (df_spin_phys['bad_blue_pol'] == 0) & (df_spin_phys['bad_yellow_pol'] == 0)]['Events'])})
-
-    event_dict.update({'badrunqa=0': np.sum(df_spin_phys[df_spin_phys['badrunqa'] == 0]['Events'])})
-    print(f'Badrunqa=0 events: {event_dict["badrunqa=0"]}')
-
-    plot_event_count_dict(event_dict)
-
-    spin_pattern_dict = {}
-    # Sum the number of events for each unique combined_fill_pattern_label and add to the spin_pattern_dict
-    for pattern in spin_pattern_df['combined_fill_pattern_label2'].unique():
-        spin_pattern_dict.update({pattern: np.sum(spin_pattern_df[spin_pattern_df['combined_fill_pattern_label2'] == pattern]['Events'])})
-
-    plot_event_count_dict(spin_pattern_dict, fontsize=10, title='All Physics+Spin Spin Patterns')
-
-    good_event_spin_pattern_dict = {}
-    df_goodqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 0]
-
-    # Sum the number of events for each unique combined_fill_pattern_label and add to the good_event_spin_pattern_dict
-    for pattern in df_goodqa['combined_fill_pattern_label2'].unique():
-        good_event_spin_pattern_dict.update({pattern: np.sum(df_goodqa[df_goodqa['combined_fill_pattern_label2'] == pattern]['Events'])})
-
-    print(f'Badrunqa=0 events: {np.sum(df_goodqa["Events"])}')
-    print(f'Sum of good_event_spin_pattern_dict events: {np.sum(list(good_event_spin_pattern_dict.values()))}')
-
-    plot_event_count_dict(good_event_spin_pattern_dict, fontsize=12, title='Badrunqa=0 Spin Patterns')
-
-    bad_run_spin_pattern_dict = {}
-    df_badqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 1]
-    # bad_run_spin_pattern_dict.update({'badrunqa=1': np.sum(df_badqa['Events'])})
-
-    # Sum the number of events for each unique combined_fill_pattern_label and add to the bad_run_spin_pattern_dict
-    for pattern in df_badqa['combined_fill_pattern_label2'].unique():
-        bad_run_spin_pattern_dict.update({pattern: np.sum(df_badqa[df_badqa['combined_fill_pattern_label2'] == pattern]['Events'])})
-
-    print(f'Badrunqa=1 events: {np.sum(df_badqa["Events"])}')
-    print(f'Sum of bad_run_spin_pattern_dict events: {np.sum(list(bad_run_spin_pattern_dict.values()))}')
-
-    plot_event_count_dict(bad_run_spin_pattern_dict, fontsize=12, title='Badrunqa=1 Spin Patterns')
-
-    bad_run_non_111_dict = {}
-    df_badqa_non_111 = df_badqa[(df_badqa['blue_bunch_num'] != 111) | (df_badqa['yellow_bunch_num'] != 111)]
-
-    # Sum the number of events for each unique combined_fill_pattern_label and add to the bad_run_non_111_dict
-    for pattern in df_badqa_non_111['combined_fill_pattern_label2'].unique():
-        bad_run_non_111_dict.update({pattern: np.sum(df_badqa_non_111[df_badqa_non_111['combined_fill_pattern_label2'] == pattern]['Events'])})
-
-    print(f'Badrunqa=1 non-111 events: {np.sum(df_badqa_non_111["Events"])}')
-
-    plot_event_count_dict(bad_run_non_111_dict, fontsize=12, title='Badrunqa=1 Non-111x111 Spin Patterns')
-
-    df_badqa_111 = df_badqa[(df_badqa['blue_bunch_num'] == 111) & (df_badqa['yellow_bunch_num'] == 111)]
-
-    bad_run_all_dict = {
-        'badrunqa=1': np.sum(df_badqa['Events']),
-        'non-111x111': np.sum(df_badqa_non_111['Events']),
-        '111x111': np.sum(df_badqa_111['Events']),
-        'Good Polarizations': np.sum(df_badqa[(df_badqa['bad_blue_pol'] == 0) & (df_badqa['bad_yellow_pol'] == 0)]['Events']),
-        'Bad Polarizations': np.sum(df_badqa[(df_badqa['bad_blue_pol'] == 1) | (df_badqa['bad_yellow_pol'] == 1)]['Events'])
+    counts_dict[key] = {
+        'events': np.sum(df['Events']),
+        'runs': df['runnumber'].nunique()
     }
-    plot_event_count_dict(bad_run_all_dict, fontsize=12, title='Badrunqa=1 All Spin Patterns')
 
 
-
-def plot_event_count_dict(event_dict, fontsize=14, title=None):
+def plot_event_count_dict(event_count_dict, fontsize=14, title=None):
     """
-    Plot the event count dictionary as a horizontal bar chart
-    :param event_dict:
-    :param fontsize:
-    :param title:
-    :return:
+    Plot the event count dictionary as a horizontal bar chart.
+    :param event_count_dict: Dictionary with counts to plot.
+    :param fontsize: Font size for the plot.
+    :param title: Title of the plot.
     """
-    # Plot these event counts as a horizontal bar chart
-    fig, ax = plt.subplots(1, 1, figsize=(12, 6))
-    event_dict = dict(sorted(event_dict.items(), key=lambda item: item[1]))  # Sort the dictionary so original at top
+    event_dict = {k: v['events'] for k, v in event_count_dict.items()}  # Extract event counts
+    event_dict = dict(sorted(event_dict.items(), key=lambda item: item[1]))  # Sort by event count
+
+    fig, ax = plt.subplots(1, 1, figsize=(11, 8))
     ax.barh(list(event_dict.keys()), list(event_dict.values()))
     max_val = max(event_dict.values())
-    for i, v in enumerate(event_dict.values()):  # Write the number of events on the bars in green
-        if v > 0.2 * max_val:
-            ax.text(v, i, f'{int(v):.2e}  ', color='white', va='center', ha='right', fontweight='bold',
-                    fontsize=fontsize)
+
+    for i, (key, val) in enumerate(event_dict.items()):
+        label = f"{int(val):.2e} (Runs: {event_count_dict[key]['runs']})"
+        if val > 0.25 * max_val:
+            ax.text(val, i, label + '  ', color='white', va='center', ha='right', fontweight='bold', fontsize=fontsize)
         else:
-            ax.text(v, i, f'  {int(v):.2e}', color='black', va='center', ha='left', fontweight='bold',
-                    fontsize=fontsize)
+            ax.text(val, i, '  ' + label, color='black', va='center', ha='left', fontweight='bold', fontsize=fontsize)
+
     if title:
         ax.set_title(title)
     ax.set_xlabel('Number of Events')
     fig.tight_layout()
+
+
+def count_events(df):
+    """
+    Count the number of events and runs as filters are applied.
+    :param df: Input DataFrame.
+    """
+    counts_runs_dict = {}
+
+    df = df[df['Events'] > 500000]
+
+    # Original data
+    append_counts(counts_runs_dict, df, 'original')
+
+    # Physics data
+    df_phys = df[df['Type'] == 'physics']
+    append_counts(counts_runs_dict, df_phys, 'physics')
+
+    # Spin physics data
+    df_spin_phys = df_phys[df_phys['runnumber'] >= 45235]
+    append_counts(counts_runs_dict, df_spin_phys, 'spin_phys')
+
+    spin_pattern_df = characterize_spin_patterns(df_spin_phys)
+
+    # 111x111
+    append_counts(counts_runs_dict, df_spin_phys[(spin_pattern_df['blue_bunch_num'] == 111) &
+                                                 (spin_pattern_df['yellow_bunch_num'] == 111)], '111x111')
+
+    # 111x111 good polarization
+    append_counts(
+        counts_runs_dict,
+        df_spin_phys[(spin_pattern_df['blue_bunch_num'] == 111) & (spin_pattern_df['yellow_bunch_num'] == 111) &
+                     (spin_pattern_df['bad_blue_pol'] == 0) & (spin_pattern_df['bad_yellow_pol'] == 0)],
+        '111x111 good pol'
+    )
+
+    # Badrunqa = 0
+    append_counts(counts_runs_dict, spin_pattern_df[df_spin_phys['badrunqa'] == 0], 'badrunqa=0')
+
+    # Plot event counts
+    plot_event_count_dict(counts_runs_dict, title='Badrunqa=0 Accounting')
+
+    # Bad run accounting
+    bad_run_spin_pattern_dict = {}
+    df_badqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 1]
+
+    for pattern in df_badqa['combined_fill_pattern_label2'].unique():
+        append_counts(bad_run_spin_pattern_dict, df_badqa[df_badqa['combined_fill_pattern_label2'] == pattern], pattern)
+
+    plot_event_count_dict(bad_run_spin_pattern_dict, fontsize=12, title='Badrunqa=1 Spin Patterns')
+
+    # Good event spin patterns
+    good_event_spin_pattern_dict = {}
+    df_goodqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 0]
+
+    for pattern in df_goodqa['combined_fill_pattern_label2'].unique():
+        append_counts(good_event_spin_pattern_dict, df_goodqa[df_goodqa['combined_fill_pattern_label2'] == pattern], pattern)
+
+    plot_event_count_dict(good_event_spin_pattern_dict, fontsize=12, title='Badrunqa=0 Spin Patterns')
+
+    # Bad run non-111x111
+    bad_run_non_111_dict = {}
+    df_badqa_non_111 = df_badqa[(df_badqa['blue_bunch_num'] != 111) | (df_badqa['yellow_bunch_num'] != 111)]
+
+    for pattern in df_badqa_non_111['combined_fill_pattern_label2'].unique():
+        append_counts(bad_run_non_111_dict, df_badqa_non_111[df_badqa_non_111['combined_fill_pattern_label2'] == pattern], pattern)
+
+    plot_event_count_dict(bad_run_non_111_dict, fontsize=12, title='Badrunqa=1 Non-111x111 Spin Patterns')
+
+    # Badqa 111x111
+    df_badqa_111 = df_badqa[(df_badqa['blue_bunch_num'] == 111) & (df_badqa['yellow_bunch_num'] == 111)]
+
+    bad_run_all_dict = {}
+    append_counts(bad_run_all_dict, df_badqa, 'badrunqa=1')
+    append_counts(bad_run_all_dict, df_badqa_non_111, 'non-111x111')
+    append_counts(bad_run_all_dict, df_badqa_111, '111x111')
+    append_counts(bad_run_all_dict, df_badqa[(df_badqa['bad_blue_pol'] == 0) & (df_badqa['bad_yellow_pol'] == 0)], 'Good Polarizations')
+    append_counts(bad_run_all_dict, df_badqa[(df_badqa['bad_blue_pol'] == 1) | (df_badqa['bad_yellow_pol'] == 1)], 'Bad Polarizations')
+
+    plot_event_count_dict(bad_run_all_dict, fontsize=12, title='Badrunqa=1 All Spin Patterns')
+
+    bad_run_explanation_dict = {}
+    append_counts(bad_run_explanation_dict, df_badqa, 'badrunqa=1')
+    append_counts(bad_run_explanation_dict, df_badqa_non_111, 'non-111x111')
+    append_counts(bad_run_explanation_dict, df_badqa[(df_badqa['bad_blue_pol'] == 1) | (df_badqa['bad_yellow_pol'] == 1)], 'Bad Polarizations')
+    df_badqa_111_good_pol = df_badqa_111[(df_badqa_111['bad_blue_pol'] == 0) & (df_badqa_111['bad_yellow_pol'] == 0)]
+    append_counts(bad_run_explanation_dict, df_badqa_111_good_pol, '111x111 Good Polarizations')
+
+    plot_event_count_dict(bad_run_explanation_dict, fontsize=12, title='Badrunqa=1 Explanation')
+
+    # Spin pattern breakdown
+    # spin_pattern_df = characterize_spin_patterns(df_spin_phys)
+    for pattern in spin_pattern_df['combined_fill_pattern_label2'].unique():
+        append_counts(counts_runs_dict, spin_pattern_df[spin_pattern_df['combined_fill_pattern_label2'] == pattern], pattern)
+
+    plot_event_count_dict(counts_runs_dict, title='Spin Patterns')
+
+    # Badrunqa breakdowns
+    df_goodqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 0]
+    df_badqa = spin_pattern_df[spin_pattern_df['badrunqa'] == 1]
+
+    append_counts(counts_runs_dict, df_goodqa, 'goodqa spin patterns')
+    append_counts(counts_runs_dict, df_badqa, 'badqa spin patterns')
+
+    plot_event_count_dict(counts_runs_dict, title='QA-Based Spin Patterns')
 
 
 def read_spin_patterns(blue_spin_patterns_path, yellow_spin_patterns_path):
