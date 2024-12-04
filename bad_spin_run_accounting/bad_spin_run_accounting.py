@@ -259,7 +259,7 @@ def count_events(df):
     """
     counts_runs_dict = {}
 
-    df = df[df['Events'] > 500000]
+    # df = df[df['Events'] > 500000]
 
     # Original data
     append_counts(counts_runs_dict, df, 'original')
@@ -272,7 +272,7 @@ def count_events(df):
     df_spin_phys = df_phys[df_phys['runnumber'] >= 45235]
     append_counts(counts_runs_dict, df_spin_phys, 'spin_phys')
 
-    spin_pattern_df = characterize_spin_patterns(df_spin_phys)
+    spin_pattern_df = characterize_spin_patterns(df_spin_phys.copy())
 
     # 111x111
     append_counts(counts_runs_dict, df_spin_phys[(spin_pattern_df['blue_bunch_num'] == 111) &
@@ -313,6 +313,11 @@ def count_events(df):
     # Bad run non-111x111
     bad_run_non_111_dict = {}
     df_badqa_non_111 = df_badqa[(df_badqa['blue_bunch_num'] != 111) | (df_badqa['yellow_bunch_num'] != 111)]
+
+    # Print runs and fills with non-111x111 patterns
+    for i, row in df_badqa_non_111.iterrows():
+        print(f'Run: {row["runnumber"]}, Fill: {row["fillnumber"]}, Events: {row["Events"]} Pattern: {row["combined_fill_pattern_label2"]}, {row["combined_fill_pattern_label"]},'
+              f' Blue: {row["spinpatternblue"]}, Yellow: {row["spinpatternyellow"]}')
 
     for pattern in df_badqa_non_111['combined_fill_pattern_label2'].unique():
         append_counts(bad_run_non_111_dict, df_badqa_non_111[df_badqa_non_111['combined_fill_pattern_label2'] == pattern], pattern)
@@ -373,19 +378,18 @@ def characterize_spin_patterns(spin_db_df):
     :param spin_db_df:
     :return:
     """
-    # Get distinct blue and yellow spin patterns
-    blue_fill_patterns = spin_db_df['spinpatternblue'].unique()
-    yellow_fill_patterns = spin_db_df['spinpatternyellow'].unique()
-
-    print(f'Blue fill patterns: {len(blue_fill_patterns)}')
-    print(f'Yellow fill patterns: {len(yellow_fill_patterns)}')
-
     # For each blue and yellow distinct fill patterns, assign an index and make a histogram showing how many runs for
     # each spin pattern
 
     # Count the number of runs for each fill pattern
     blue_fill_pattern_counts = spin_db_df['spinpatternblue'].value_counts()
     yellow_fill_pattern_counts = spin_db_df['spinpatternyellow'].value_counts()
+
+    blue_fill_patterns = blue_fill_pattern_counts.index
+    yellow_fill_patterns = yellow_fill_pattern_counts.index
+
+    print(f'Blue fill patterns: {len(blue_fill_patterns)}')
+    print(f'Yellow fill patterns: {len(yellow_fill_patterns)}')
 
     # Print the spin patterns and counts
     print('Blue Fill Patterns:')
@@ -478,26 +482,35 @@ def characterize_spin_patterns(spin_db_df):
     blue_label_dict = dict(zip(blue_fill_patterns, blue_labels))
     yellow_label_dict = dict(zip(yellow_fill_patterns, yellow_labels))
 
-    # In the original dataframe, map the labels using these dictionaries
-    spin_db_df.loc[:, 'blue_fill_pattern_label'] = spin_db_df['spinpatternblue'].map(blue_label_dict)
-    spin_db_df.loc[:, 'yellow_fill_pattern_label'] = spin_db_df['spinpatternyellow'].map(yellow_label_dict)
-    spin_db_df.loc[:, 'combined_fill_pattern_label'] = [
-        f'{spin_db_df["blue_fill_pattern_label"].iloc[i]} | {spin_db_df["yellow_fill_pattern_label"].iloc[i]}' for i in
-        range(len(spin_db_df))]
+    for i in range(len(blue_fill_patterns)):
+        print(f'{blue_labels[i]} : {blue_fill_patterns[i]}')
+
+    # Map the labels using these dictionaries
+    spin_db_df['blue_fill_pattern_label'] = spin_db_df['spinpatternblue'].map(blue_label_dict)
+    spin_db_df['yellow_fill_pattern_label'] = spin_db_df['spinpatternyellow'].map(yellow_label_dict)
+
+    # Combine labels without using list comprehension
+    spin_db_df['combined_fill_pattern_label'] = (
+            spin_db_df['blue_fill_pattern_label'].astype(str) + " | " +
+            spin_db_df['yellow_fill_pattern_label'].astype(str)
+    )
 
     # Add the labels2 along with combined label2
     blue_label_dict2 = dict(zip(blue_fill_patterns, blue_labels2))
     yellow_label_dict2 = dict(zip(yellow_fill_patterns, yellow_labels2))
 
-    spin_db_df.loc[:, 'blue_fill_pattern_label2'] = spin_db_df['spinpatternblue'].map(blue_label_dict2)
-    spin_db_df.loc[:, 'yellow_fill_pattern_label2'] = spin_db_df['spinpatternyellow'].map(yellow_label_dict2)
-    spin_db_df.loc[:, 'combined_fill_pattern_label2'] = [
-        f'{spin_db_df["blue_fill_pattern_label2"].iloc[i]} | {spin_db_df["yellow_fill_pattern_label2"].iloc[i]}' for i in
-        range(len(spin_db_df))]
+    spin_db_df['blue_fill_pattern_label2'] = spin_db_df['spinpatternblue'].map(blue_label_dict2)
+    spin_db_df['yellow_fill_pattern_label2'] = spin_db_df['spinpatternyellow'].map(yellow_label_dict2)
+
+    spin_db_df['combined_fill_pattern_label2'] = (
+            spin_db_df['blue_fill_pattern_label2'].astype(str) + " | " +
+            spin_db_df['yellow_fill_pattern_label2'].astype(str)
+    )
 
     # Add bunch number column
-    spin_db_df.loc[:, 'blue_bunch_num'] = spin_db_df['spinpatternblue'].map(dict(zip(blue_fill_patterns, blue_bunch_num)))
-    spin_db_df.loc[:, 'yellow_bunch_num'] = spin_db_df['spinpatternyellow'].map(dict(zip(yellow_fill_patterns, yellow_bunch_num)))
+    spin_db_df['blue_bunch_num'] = spin_db_df['spinpatternblue'].map(dict(zip(blue_fill_patterns, blue_bunch_num)))
+    spin_db_df['yellow_bunch_num'] = spin_db_df['spinpatternyellow'].map(
+        dict(zip(yellow_fill_patterns, yellow_bunch_num)))
 
     return spin_db_df
 
