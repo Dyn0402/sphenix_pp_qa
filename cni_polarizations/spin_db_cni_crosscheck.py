@@ -89,7 +89,7 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df):
     spin_db_spin_physics = spin_db_df[(spin_db_df['Type'] == 'physics') & (spin_db_df['runnumber'] >= 45235)]
 
     mismatched_runs, mismatched_events, missing_runs, missing_events = 0, 0, 0, 0
-    missing_cni_fills = {}
+    missing_cni_fills, mismatched_spin_db_runs = {}, []
     for index, row in spin_db_spin_physics.iterrows():
         blue_spin_patterns, yellow_spin_patterns = get_fill_spin_patterns(cni_measurements_df, row['fillnumber'])
         if blue_spin_patterns is None or yellow_spin_patterns is None or len(blue_spin_patterns) == 0 or len(yellow_spin_patterns) == 0:
@@ -129,6 +129,7 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df):
             print(f'Mismatch for fill {row["fillnumber"]}')
             mismatched_runs += 1
             mismatched_events += row['Events']
+            mismatched_spin_db_runs.append(row['runnumber'])
         # else:
         #     print(f'Run {row["runnumber"]} Fill {row["fillnumber"]} matches')
 
@@ -142,10 +143,16 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df):
         print(f'\nFill {fill} with {info["events"]} events missing {info["runs"]} runs')
         print(f'Runs: {info["runns"]}')
 
+    print(f'\nMismatched spin db runs ({len(mismatched_spin_db_runs)})')
+    print(mismatched_spin_db_runs)
+
+    all_bad_runs = mismatched_spin_db_runs + [run for fill, info in missing_cni_fills.items() for run in info['runns']]
+
+
     # Write in latex table format with Fill & Empty (for notes) & Runs & Events \\
-    print('Latex table format')
-    for fill, info in missing_cni_fills.items():
-        print(f'{fill} & & {info["runs"]} & {info["events"]} \\\\')
+    # print('\nLatex table format')
+    # for fill, info in missing_cni_fills.items():
+    #     print(f'{fill} & & {info["runs"]} & {info["events"]} \\\\')
 
 
 def get_fill_spin_patterns(cni_measurements_df, fill_number):
