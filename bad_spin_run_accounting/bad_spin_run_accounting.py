@@ -212,16 +212,18 @@ def plot_bad_runs(spin_db_df, blue_spin_patterns, yellow_spin_patterns):
 #     fig.tight_layout()
 
 
-def append_counts(counts_dict, df, key):
+def append_counts(counts_dict, df, key, color='black'):
     """
     Append the number of events and runs for a given DataFrame and key.
     :param counts_dict: Dictionary to store counts.
     :param df: Filtered DataFrame.
     :param key: Key to label this filter.
+    :param color: Color to use in the plot.
     """
     counts_dict[key] = {
         'events': np.sum(df['Events']),
-        'runs': df['runnumber'].nunique()
+        'runs': df['runnumber'].nunique(),
+        'color': color
     }
 
 
@@ -232,14 +234,16 @@ def plot_event_count_dict(event_count_dict, fontsize=14, title=None):
     :param fontsize: Font size for the plot.
     :param title: Title of the plot.
     """
-    event_dict = {k: v['events'] for k, v in event_count_dict.items()}  # Extract event counts
-    event_dict = dict(sorted(event_dict.items(), key=lambda item: item[1]))  # Sort by event count
+    event_dict = dict(sorted(event_count_dict.items(), key=lambda item: item[1]['events']))  # Sort by event count
+    event_keys = list(event_dict.keys())
+    event_nums = [event_dict[key]['events'] for key in event_keys]
+    event_colors = [event_dict[key]['color'] for key in event_keys]
 
     fig, ax = plt.subplots(1, 1, figsize=(11, 8))
-    ax.barh(list(event_dict.keys()), list(event_dict.values()))
-    max_val = max(event_dict.values())
+    ax.barh(event_keys, event_nums, color=event_colors)
+    max_val = max(event_nums)
 
-    for i, (key, val) in enumerate(event_dict.items()):
+    for i, (key, val) in enumerate(zip(event_keys, event_nums)):
         label = f"{int(val):.2e} (Runs: {event_count_dict[key]['runs']})"
         if val > 0.25 * max_val:
             ax.text(val, i, label + '  ', color='white', va='center', ha='right', fontweight='bold', fontsize=fontsize)
@@ -271,6 +275,13 @@ def count_events(df):
     # Spin physics data
     df_spin_phys = df_phys[df_phys['runnumber'] >= 45235]
     append_counts(counts_runs_dict, df_spin_phys, 'spin_phys')
+
+    counts_runs_dict_copy = counts_runs_dict.copy()
+    # Badrunqa = 0
+    append_counts(counts_runs_dict_copy, df_spin_phys[df_spin_phys['badrunqa'] == 0], 'badrunqa=0')
+
+    # Plot event counts
+    plot_event_count_dict(counts_runs_dict_copy, title=None)
 
     spin_pattern_df = characterize_spin_patterns(df_spin_phys.copy())
 
@@ -337,7 +348,7 @@ def count_events(df):
     plot_event_count_dict(bad_run_all_dict, fontsize=12, title='Badrunqa=1 All Spin Patterns')
 
     bad_run_explanation_dict = {}
-    append_counts(bad_run_explanation_dict, df_badqa, 'badrunqa=1')
+    append_counts(bad_run_explanation_dict, df_badqa, 'badrunqa=1', color='red')
     append_counts(bad_run_explanation_dict, df_badqa_non_111, 'non-111x111')
     append_counts(bad_run_explanation_dict, df_badqa[(df_badqa['bad_blue_pol'] == 1) | (df_badqa['bad_yellow_pol'] == 1)], 'Bad Polarizations')
     df_badqa_111_good_pol = df_badqa_111[(df_badqa_111['bad_blue_pol'] == 0) & (df_badqa_111['bad_yellow_pol'] == 0)]

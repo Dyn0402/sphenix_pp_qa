@@ -399,7 +399,7 @@ def plot_crossing_vs_time(run_crossing_df, period_boundaries=None, ls='-', verni
                     color='green', alpha=0.2, ls='None')
     if vernier_scan_runs:
         ax_rel.plot(df_vernier_scan['mid'], df_vernier_scan['relative_mean'], color='red', ls='None', marker='x',
-                    markersize=6, zorder=10, label='Vernier Scan')
+                    markersize=10, zorder=10, label='Vernier Scan')
     ax_rel.axhline(0, ls='-', alpha=0.3, color='black')
     if period_boundaries:
         for boundary in period_boundaries:
