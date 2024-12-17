@@ -101,7 +101,7 @@ def get_from_site_user():
     df.to_csv(df_out_path, index=False)
 
 
-def fetch_html(url, proxy=None):
+def fetch_html(url, proxy=None, params=None, headers=None):
     """
     Fetch the HTML content of a given URL.
 
@@ -114,7 +114,7 @@ def fetch_html(url, proxy=None):
     """
     try:
         # Optional proxy support
-        response = requests.get(url, proxies=proxy, timeout=10)
+        response = requests.get(url, proxies=proxy, params=params, headers=headers, timeout=10)
         response.raise_for_status()  # Raise HTTPError for bad responses
         return response.text
     except requests.exceptions.RequestException as e:
