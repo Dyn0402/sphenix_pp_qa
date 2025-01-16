@@ -34,8 +34,9 @@ def main():
 
     blue_spin_patterns, yellow_spin_patterns = read_spin_patterns(blue_spin_patterns_path, yellow_spin_patterns_path)
     check_cni_patterns_vs_known(cni_measurements_df, blue_spin_patterns, yellow_spin_patterns)
-
+    print()
     cross_check_spin_patterns(spin_db_df, cni_measurements_df)
+    plt.show()
     print('donzo')
 
 
@@ -134,20 +135,42 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df):
         #     print(f'Run {row["runnumber"]} Fill {row["fillnumber"]} matches')
 
         # input('Enter to continue')
-    print(f'{mismatched_runs} runs with {mismatched_events} events mismatched')
+    print(f'{mismatched_runs} runs with {mismatched_events} events with mismatched spin patterns')
     print(f'{missing_runs} runs with {missing_events} events missing CNI measurements')
+    print(f'{missing_runs + mismatched_runs} total bad runs with {missing_events + mismatched_events} events')
     # Sort missing_cni_fills by fill number
     missing_cni_fills = dict(sorted(missing_cni_fills.items()))
-    print(f'Missing CNI fills ({len(missing_cni_fills)})')
+    print(f'\n\nMissing CNI fills ({len(missing_cni_fills)})')
     for fill, info in missing_cni_fills.items():
         print(f'\nFill {fill} with {info["events"]} events missing {info["runs"]} runs')
         print(f'Runs: {info["runns"]}')
 
+    missing_cni_info_runs = [run for fill, info in missing_cni_fills.items() for run in info['runns']]
+    all_bad_runs = mismatched_spin_db_runs + missing_cni_info_runs
+
     print(f'\nMismatched spin db runs ({len(mismatched_spin_db_runs)})')
     print(mismatched_spin_db_runs)
 
-    all_bad_runs = mismatched_spin_db_runs + [run for fill, info in missing_cni_fills.items() for run in info['runns']]
+    # Get the date and time of each run. Plot the number of events on the y axis with good runs as green circle and bad as red x.
+    good_runs = spin_db_spin_physics[~spin_db_spin_physics['runnumber'].isin(all_bad_runs)]
+    missing_cni_runs = spin_db_spin_physics[spin_db_spin_physics['runnumber'].isin(missing_cni_info_runs)]
+    mismatch_runs = spin_db_spin_physics[spin_db_spin_physics['runnumber'].isin(mismatched_spin_db_runs)]
+    good_runs['Start'] = pd.to_datetime(good_runs['Start'])
+    missing_cni_runs['Start'] = pd.to_datetime(missing_cni_runs['Start'])
+    mismatch_runs['Start'] = pd.to_datetime(mismatch_runs['Start'])
+    fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+    ax.plot(good_runs['Start'], good_runs['Events'], 'go', alpha=0.5, label='Good Runs')
+    ax.plot(missing_cni_runs['Start'], missing_cni_runs['Events'], 'ro', markersize=9,
+            label='Missing CNI Measurements')
+    ax.plot(mismatch_runs['Start'], mismatch_runs['Events'], color='orange', marker='o', ls='none', markersize=9,
+            label='Mismatched with CNI Spin Patterns')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of Events')
+    ax.legend()
+    ax.set_ylim(bottom=0)
+    fig.tight_layout()
 
+    print(f'Total bad events: {mismatched_events + missing_events}')
 
     # Write in latex table format with Fill & Empty (for notes) & Runs & Events \\
     # print('\nLatex table format')
