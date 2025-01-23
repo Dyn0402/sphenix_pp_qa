@@ -14,9 +14,8 @@ import uproot
 
 
 def main():
-    # hjet_dir_path = '/local/home/dn277127/Bureau/pp_qa/hjet_pol/'
     hjet_dir_path = '/gpfs02/eic/cnipol/jet_run24/results/'
-    df_name = 'hjet_pol_info.csv'
+    df_name = 'hjet_gpfs_pol_info.csv'
     df = []
     for dir_name in os.listdir(hjet_dir_path):
         if 'fill_' not in dir_name:
@@ -25,8 +24,8 @@ def main():
         root_path = f'{hjet_dir_path}fill_{fill}/DST_{fill}.root'
         print(f'Opening {root_path}')
         with uproot.open(root_path) as file:
-            yellow_spin_pattern = file['h_polYellow'].to_numpy()[0]
-            blue_spin_pattern = file['h_polBlue'].to_numpy()[0]
+            yellow_spin_pattern = file['h_polYellow'].to_numpy()[0].tolist()
+            blue_spin_pattern = file['h_polBlue'].to_numpy()[0].tolist()
             results = file['h_results']
             res_vals, res_errs = results.values(), results.errors()
             yellow_an, blue_an = res_vals[6], res_vals[7]
@@ -34,8 +33,8 @@ def main():
             yellow_pol, blue_pol = res_vals[8], res_vals[9]
             yellow_pol_err, blue_pol_err = res_errs[8], res_errs[9]
             df.append({'Fill': fill, 'Yellow Spin Pattern': yellow_spin_pattern, 'Blue Spin Pattern': blue_spin_pattern,
-                       'Yellow AN': yellow_an, 'Blue AN': blue_an, 'Yellow AN Err': yellow_an_err, 'Blue AN Err': blue_an_err,
-                       'Yellow Pol': yellow_pol, 'Blue Pol': blue_pol, 'Yellow Pol Err': yellow_pol_err, 'Blue Pol Err': blue_pol_err})
+                       'Yellow A_N': yellow_an, 'Blue A_N': blue_an, 'Yellow A_N Err': yellow_an_err, 'Blue A_N Err': blue_an_err,
+                       'Yellow P_B': yellow_pol, 'Blue P_B': blue_pol, 'Yellow P_B Err': yellow_pol_err, 'Blue P_B Err': blue_pol_err})
 
     df = pd.DataFrame(df)
     df.to_csv(df_name, index=False)
