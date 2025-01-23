@@ -10,7 +10,6 @@ Created as sphenix_pp_qa/get_spin_stuff
 
 
 import requests
-from bs4 import BeautifulSoup
 import re
 import pandas as pd
 

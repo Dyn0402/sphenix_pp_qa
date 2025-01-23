@@ -8,9 +8,7 @@ Created as sphenix_pp_qa/get_detailed_cni_polarizations.py
 @author: Dylan Neff, Dylan
 """
 
-import requests
 from bs4 import BeautifulSoup
-import re
 import pandas as pd
 
 from get_cni_polarizations import fetch_html
@@ -21,7 +19,7 @@ def main():
 
     run_csv_options = {'rp': '24'}
     db_file_name = 'cni_measurement_list.csv'
-    read_db_from_web = False
+    read_db_from_web = True
 
     measurement_page_options = {'runid': None}
 
