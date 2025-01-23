@@ -19,11 +19,12 @@ def main():
     base_url = 'https://wiki.bnl.gov/rhicspin/Polarimetry/H-jet/'
     run_name = 'Run24pp'
     url = f'{base_url}{run_name}'
-    df_file_name = f'{run_name}_hjet_wiki_info.csv'
+    df_file_name = f'hjet_wiki_pol_info.csv'
     download = True
 
     if download:
         hjet_df = scrape_hjet_info_from_wiki(url)
+        hjet_df = split_val_err(hjet_df)
         # Save the H-jet information to a csv file
         hjet_df.to_csv(df_file_name, index=False)
     else:
@@ -56,7 +57,7 @@ def scrape_hjet_info_from_wiki(url):
         data.append(cols)
 
     # Append Blue and Yellow to the beginning of data[1]
-    an_pb = ['Blue ' + x for x in data[1][:1]] + ['Yellow ' + x for x in data[1][1:]]
+    an_pb = ['Blue ' + x for x in data[1][:2]] + ['Yellow ' + x for x in data[1][2:]]
     headers = data[0][:2] + an_pb + [data[0][-1]]
     data = data[2:]
 
@@ -65,26 +66,18 @@ def scrape_hjet_info_from_wiki(url):
     return df
 
 
-def read_html_table(html_content):
-    # Extract the table from the HTML content
-    tables = pd.read_html(StringIO(html_content))
+def split_val_err(hjet_df):
+    """
+    For columns in list, split the value and error into separate columns from plus minus separator.
+    :param hjet_df:
+    :return:
+    """
+    split_cols = ['Blue A_N', 'Blue P_B', 'Yellow A_N', 'Yellow P_B']
+    for col in split_cols:
+        hjet_df[col + ' Err'] = hjet_df[col].str.split('±').str[1].str.strip()
+        hjet_df[col] = hjet_df[col].str.split('±').str[0].str.strip()
 
-    # Since there's only one table in the given HTML, we'll use the first one
-    if tables:
-        df = tables[0]
-
-        # Clean up the column names
-        df.columns = ['Date', 'Fill', 'Blue_AN', 'Blue_PB', 'Yellow_AN', 'Yellow_PB', 'Comments']
-
-        # Remove the first row which contains column subheaders
-        df = df.iloc[1:]
-
-        # Reset the index
-        df = df.reset_index(drop=True)
-
-        return df
-    else:
-        return None
+    return hjet_df
 
 
 if __name__ == '__main__':
