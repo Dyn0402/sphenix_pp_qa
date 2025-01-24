@@ -40,7 +40,7 @@ def main():
 
     df = pd.DataFrame(df)
     for col in df.columns:
-        if 'Blue' in col or 'Yellow' in col or 'Fill' in col:
+        if ('Blue' in col or 'Yellow' in col or 'Fill' in col) and 'Pattern' not in col:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     df.to_csv(df_name, index=False)
 
