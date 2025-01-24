@@ -25,6 +25,12 @@ def main():
     if download:
         hjet_df = scrape_hjet_info_from_wiki(url)
         hjet_df = split_val_err(hjet_df)
+        for col in hjet_df.columns:
+            if 'Blue' in col or 'Yellow' in col or 'Fill' in col:
+                hjet_df[col] = pd.to_numeric(hjet_df[col], errors='coerce')
+        # Push 'Comments' to the end of the dataframe
+        comments = hjet_df.pop('Comments')
+        hjet_df['Comments'] = comments
         # Save the H-jet information to a csv file
         hjet_df.to_csv(df_file_name, index=False)
     else:
@@ -74,8 +80,13 @@ def split_val_err(hjet_df):
     """
     split_cols = ['Blue A_N', 'Blue P_B', 'Yellow A_N', 'Yellow P_B']
     for col in split_cols:
-        hjet_df[col + ' Err'] = hjet_df[col].str.split('±').str[1].str.strip()
-        hjet_df[col] = hjet_df[col].str.split('±').str[0].str.strip()
+        err_col = hjet_df[col].str.split('±').str[1].str.strip()
+        val_col = hjet_df[col].str.split('±').str[0].str.strip()
+        # Drop original column and add split columns
+        hjet_df.drop(col, axis=1, inplace=True)
+        hjet_df[col] = val_col
+        hjet_df[col + ' Err'] = err_col
+
 
     return hjet_df
 
