@@ -34,7 +34,7 @@ def main():
             yellow_pol_err, blue_pol_err = res_errs[8], res_errs[9]
             df.append({'Fill': fill, 'Blue Spin Pattern': blue_spin_pattern, 'Yellow Spin Pattern': yellow_spin_pattern,
                        'Blue A_N': blue_an, 'Blue A_N Err': blue_an_err, 'Yellow A_N': yellow_an, 'Yellow A_N Err': yellow_an_err,
-                       'Blue P_B': blue_pol, 'Blue P_B Err': blue_pol_err, 'Yellow P_B': yellow_pol, 'Yellow P_BS Err': yellow_pol})
+                       'Blue P_B': blue_pol, 'Blue P_B Err': blue_pol_err, 'Yellow P_B': yellow_pol, 'Yellow P_B Err': yellow_pol})
 
     df = pd.DataFrame(df)
     for col in df.columns:
