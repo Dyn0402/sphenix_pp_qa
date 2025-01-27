@@ -20,6 +20,7 @@ def main():
     spin_db_csv = '../spin_db.csv'
     run_info_csv = '../pp_crossing_angles/run_info.csv'
     cni_measurements_csv = 'cni_measurements.csv'
+    cni_summary_csv = 'cnipol_fills_user.csv'
     blue_spin_patterns_path = '../spin_patterns/blue_spin_patterns.txt'
     yellow_spin_patterns_path = '../spin_patterns/yellow_spin_patterns.txt'
 
@@ -31,20 +32,26 @@ def main():
     hjet_wiki_df = pd.read_csv(hjet_wiki_csv)
     hjet_root_df = pd.read_csv(hjet_root_csv)
 
-    compare_hjet_wiki_and_root(hjet_wiki_df, hjet_root_df)
-    input()
-
-    # Merge run_info into spin_db_df on spin_db runnumber and run_info Runnumber
-    spin_db_df = pd.merge(spin_db_df, run_info_df, left_on='runnumber', right_on='Runnumber', how='left')
-    spin_db_df = add_polarized_bunch_num_cols(spin_db_df, hjet_wiki_df)
+    hjet_df = compare_hjet_wiki_and_root(hjet_wiki_df, hjet_root_df)
 
     cni_measurements_df = pd.read_csv(cni_measurements_csv)
     cni_measurements_df = add_cni_df_columns(cni_measurements_df)
 
+    cni_summary_df = pd.read_csv(cni_summary_csv)
+    compare_cni_summary_and_detailed(cni_summary_df, cni_measurements_df)
+    # input()
+
+    compare_hjet_and_pc(hjet_df, cni_summary_df)
+    # input()
+
+    # Merge run_info into spin_db_df on spin_db runnumber and run_info Runnumber
+    spin_db_df = pd.merge(spin_db_df, run_info_df, left_on='runnumber', right_on='Runnumber', how='left')
+    spin_db_df = add_polarized_bunch_num_cols(spin_db_df, hjet_df)
+
     blue_spin_patterns, yellow_spin_patterns = read_spin_patterns(blue_spin_patterns_path, yellow_spin_patterns_path)
     check_cni_patterns_vs_known(cni_measurements_df, blue_spin_patterns, yellow_spin_patterns)
     print()
-    cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_nums=True)
+    cross_check_spindb_cni_fills(spin_db_df, cni_measurements_df, plot_fill_run_nums=True)
     plt.show()
     print('donzo')
 
@@ -88,9 +95,9 @@ def check_cni_patterns_vs_known(cni_measurements_df, blue_spin_patterns, yellow_
         print(f'{mismatched_111_patterns} 111 patterns do not match known spin patterns')
 
 
-def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_nums=False):
+def cross_check_spindb_cni_fills(spin_db_df, cni_measurements_df, plot_fill_run_nums=False):
     """
-    Cross-check spin patterns from spin_db with cni_measurements
+    Cross-check fills from spin_db with cni_measurements
     :param spin_db_df:
     :param cni_measurements_df:
     :param plot_fill_run_nums:
@@ -100,8 +107,8 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
     spin_db_spin_physics_all = spin_db_df[(spin_db_df['Type'] == 'physics') & (spin_db_df['runnumber'] >= 45235)]
     spin_db_spin_physics = spin_db_spin_physics_all[(spin_db_spin_physics_all['polarized']) & (spin_db_spin_physics_all['bunches'] == 111)]
 
-    mismatched_runs, mismatched_events, missing_runs, missing_events = 0, 0, 0, 0
-    missing_cni_fills, mismatched_spin_db_runs = {}, []
+    mismatched_runs, mismatched_events, missing_runs, missing_events, bad_pol_runs = 0, 0, 0, 0, 0
+    missing_cni_fills, mismatched_spin_db_runs, spin_db_bad_pol_runs = {}, [], []
     for index, row in spin_db_spin_physics.iterrows():
         blue_spin_patterns, yellow_spin_patterns = get_fill_spin_patterns(cni_measurements_df, row['fillnumber'])
         if blue_spin_patterns is None or yellow_spin_patterns is None or len(blue_spin_patterns) == 0 or len(yellow_spin_patterns) == 0:
@@ -142,6 +149,16 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
             mismatched_runs += 1
             mismatched_events += row['Events']
             mismatched_spin_db_runs.append(row['runnumber'])
+
+        blue_polarizations, yellow_polarizations = get_fill_polarizations(cni_measurements_df, row['fillnumber'])
+        blue_spindb_pol = extract_spindb_pol_val(row['polarblue'])
+        yellow_spindb_pol = extract_spindb_pol_val(row['polaryellow'])
+        # print(f'Fill {row["fillnumber"]} Blue CNI: {list(blue_polarizations)} SpinDB: {blue_spindb_pol}')
+        # print(f'Fill {row["fillnumber"]} Yellow CNI: {list(yellow_polarizations)} SpinDB: {yellow_spindb_pol}')
+        if not((30 < blue_spindb_pol < 100) and (30 < yellow_spindb_pol < 100)):
+            print(f'Bad polarization for fill {row["fillnumber"]} with blue {blue_spindb_pol} and yellow {yellow_spindb_pol}')
+            spin_db_bad_pol_runs.append(row['runnumber'])
+            bad_pol_runs += 1
         # else:
         #     print(f'Run {row["runnumber"]} Fill {row["fillnumber"]} matches')
 
@@ -149,6 +166,8 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
     print(f'{mismatched_runs} runs with {mismatched_events} events with mismatched spin patterns')
     print(f'{missing_runs} runs with {missing_events} events missing CNI measurements')
     print(f'{missing_runs + mismatched_runs} total bad runs with {missing_events + mismatched_events} events')
+
+    print(f'{bad_pol_runs} runs with bad polarization')
     # Sort missing_cni_fills by fill number
     missing_cni_fills = dict(sorted(missing_cni_fills.items()))
     print(f'\n\nMissing CNI fills ({len(missing_cni_fills)})')
@@ -174,9 +193,10 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
 
     # Get bad_spindb_qa_runs that are not in missing_cni_info_runs or mismatched_spin_db_runs
     bad_spindb_qa_runs = [run for run in bad_spindb_qa_runs
-                          if run not in missing_cni_info_runs and run not in mismatched_spin_db_runs]
+                          if run not in missing_cni_info_runs and run not in mismatched_spin_db_runs
+                          and run not in spin_db_bad_pol_runs]
 
-    all_bad_runs = mismatched_spin_db_runs + missing_cni_info_runs + bad_spindb_qa_runs
+    all_bad_runs = mismatched_spin_db_runs + missing_cni_info_runs + bad_spindb_qa_runs + spin_db_bad_pol_runs
 
     print(f'\nMismatched spin db runs ({len(mismatched_spin_db_runs)})')
     print(mismatched_spin_db_runs)
@@ -185,6 +205,7 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
     good_runs = spin_db_spin_physics[~spin_db_spin_physics['runnumber'].isin(all_bad_runs)]
     missing_cni_runs = spin_db_spin_physics[spin_db_spin_physics['runnumber'].isin(missing_cni_info_runs)]
     mismatch_runs = spin_db_spin_physics[spin_db_spin_physics['runnumber'].isin(mismatched_spin_db_runs)]
+    bad_pol_runs = spin_db_spin_physics[spin_db_spin_physics['runnumber'].isin(spin_db_bad_pol_runs)]
     other_bad_spin_db_qa_runs = spin_db_spin_physics[spin_db_spin_physics['runnumber'].isin(bad_spindb_qa_runs)]
     unpolarized_runs = spin_db_spin_physics_all[~spin_db_spin_physics_all['polarized']]
     non_111x111_runs = spin_db_spin_physics_all[spin_db_spin_physics_all['bunches'] != 111]
@@ -192,6 +213,7 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
     good_runs['Start'] = pd.to_datetime(good_runs['Start'])
     missing_cni_runs['Start'] = pd.to_datetime(missing_cni_runs['Start'])
     mismatch_runs['Start'] = pd.to_datetime(mismatch_runs['Start'])
+    bad_pol_runs['Start'] = pd.to_datetime(bad_pol_runs['Start'])
     other_bad_spin_db_qa_runs['Start'] = pd.to_datetime(other_bad_spin_db_qa_runs['Start'])
     unpolarized_runs['Start'] = pd.to_datetime(unpolarized_runs['Start'])
     non_111x111_runs['Start'] = pd.to_datetime(non_111x111_runs['Start'])
@@ -200,6 +222,7 @@ def cross_check_spin_patterns(spin_db_df, cni_measurements_df, plot_fill_run_num
     ax.plot(good_runs['Start'], good_runs['Events'], 'go', alpha=0.5, label='Good Runs')
     ax.plot(unpolarized_runs['Start'], unpolarized_runs['Events'], 'bo', alpha=0.5, label='Unpolarized Runs')
     ax.plot(non_111x111_runs['Start'], non_111x111_runs['Events'], 'yo', alpha=0.5, label='Non 111x111 Bunch Runs')
+    ax.plot(bad_pol_runs['Start'], bad_pol_runs['Events'], 'mo', alpha=0.5, label='Bad Polarization Runs')
     ax.plot(missing_cni_runs['Start'], missing_cni_runs['Events'], 'ro', markersize=9,
             label='Missing CNI Measurements')
     ax.plot(mismatch_runs['Start'], mismatch_runs['Events'], color='orange', marker='o', ls='none', markersize=9,
@@ -288,7 +311,93 @@ def compare_hjet_wiki_and_root(hjet_wiki_df, hjet_root_df):
 
     # The two dataframes will now have the same columns. Append any missing Fill entries from the wiki to the root dataframe
     hjet_combo_df = hjet_root_df.merge(missing_fills_wiki_df, how='outer')
-    print(hjet_combo_df)
+    print(hjet_combo_df.columns)
+
+    return hjet_combo_df
+
+
+def compare_cni_summary_and_detailed(cni_summary_df, cni_measurements_df):
+    """
+    Compare CNI summary information with detailed CNI measurements.
+    Conclusion - Ok to use summary df for now
+    :param cni_summary_df:
+    :param cni_measurements_df:
+    :return:
+    """
+    print(f'CNI summary columns: {cni_summary_df.columns}')
+    print(f'CNI detailed columns: {cni_measurements_df.columns}')
+
+    cni_measurements_200gev_df = cni_measurements_df[cni_measurements_df['beam_energy'] >= 100]
+    # Find fills in summary that are not in detailed and vice versa
+    summary_fills = cni_summary_df['Fill'].tolist()
+    detailed_fills = cni_measurements_200gev_df['fillnumber'].tolist()
+    missing_fills_summary = np.unique([fill for fill in detailed_fills if fill not in summary_fills])
+    missing_fills_detailed = np.unique([fill for fill in summary_fills if fill not in detailed_fills])
+    print(f'Summary fills: {len(summary_fills)}, Detailed fills: {len(detailed_fills)}')
+    print(f'Missing fills in summary: {len(missing_fills_summary)}')
+    print(missing_fills_summary)
+    print(f'Missing fills in detailed: {len(missing_fills_detailed)}')
+    missing_spin_fills_summary = [fill for fill in missing_fills_summary if fill >= 34593]
+    print(f'Missing summary fills over 34593: {len(missing_spin_fills_summary)}')
+
+    # Print rows for missing fills in summary
+    missing_fills_summary_df = cni_measurements_200gev_df[cni_measurements_200gev_df['fillnumber'].isin(missing_spin_fills_summary)]
+    print(missing_fills_summary_df)
+
+    # For each unique fill number in cni_measurements_200gev_df, get all unique spin patterns for blue and yellow beam
+    # separately and count the number of times each occurs. Print the fill number and the unique spin patterns for each.
+    for fill in cni_measurements_200gev_df['fillnumber'].unique():
+        blue_spin_patterns, yellow_spin_patterns = get_fill_spin_patterns(cni_measurements_200gev_df, fill)
+        if blue_spin_patterns is not None and yellow_spin_patterns is not None:
+            print(f'Fill {fill}')
+            print(f'Blue: {blue_spin_patterns}')
+            print(f'Yellow: {yellow_spin_patterns}')
+            print()
+
+
+
+def compare_hjet_and_pc(hjet_df, cni_pc_df):
+    """
+    Compare H-jet information with CNI pC measurements
+    :param hjet_df:
+    :param cni_pc_df:
+    :return:
+    """
+    print(hjet_df.columns)
+    print(cni_pc_df.columns)
+    print(cni_pc_df.head())
+
+    # Contort the H-jet and pC data into the same minimalist format
+    # From H-jet keep columns:
+    # ['Fill', 'Blue Spin Pattern', 'Yellow Spin Pattern', 'Blue P_B', 'Blue P_B Err', 'Yellow P_B', 'Yellow P_B Err', 'Date', 'Comments']
+    # From pC keep columns:
+    # ['Fill', ]
+
+
+def cni_measurements_to_pc_df(cni_measurements_df):
+    """
+    Convert detailed CNI measurements to a dataframe with the same format as the H-jet data.
+    Original cni_measurements_df columns:
+    Index(['run_name', 'polarimeter_id', 'start_time', 'stop_time', 'beam_energy',
+       'nevents_total', 'nevents_processed', 'polarization',
+       'polarization_error', 'phase', 'phase_error', 'profile_ratio',
+       'profile_ratio_error', 'target_orient', 'target_id', 'asym_version',
+       'alpha_calib_run_name', 'dl_calib_run_name', 'measurement_type',
+       'disabled_channels', 'disabled_bunches', 'ana_start_time',
+       'ana_duration', 'nevents_silicon', 'polarimeter', 'total_str',
+       'bunch_fill_pattern', 'bunch_spin_pattern', 'fillnumber', 'beam'],
+      dtype='object')
+    HJet columns:
+    Index(['Fill', 'Blue Spin Pattern', 'Yellow Spin Pattern', 'Blue A_N',
+       'Blue A_N Err', 'Yellow A_N', 'Yellow A_N Err', 'Blue P_B',
+       'Blue P_B Err', 'Yellow P_B', 'Yellow P_B Err', 'Date', 'Comments'],
+      dtype='object')
+    'beam' is the color of the beam, use this to match with the H-jet data.
+    :param cni_measurements_df:
+    :return:
+    """
+
+
 
 
 def add_polarized_bunch_num_cols(spin_db_df, hjet_wiki_df):
@@ -346,6 +455,34 @@ def get_fill_spin_patterns(cni_measurements_df, fill_number):
     #     print(yellow_spin_patterns)
     #     input('Enter to continue')
     return blue_spin_patterns, yellow_spin_patterns
+
+
+def get_fill_polarizations(cni_measurements_df, fill_number):
+    """
+    Get polarizations for a fill number
+    :param cni_measurements_df:
+    :param fill_number:
+    :return:
+    """
+    cni_fill = cni_measurements_df[cni_measurements_df['fillnumber'] == fill_number]
+    cni_fill = cni_fill[~cni_fill['run_name'].str.endswith('alpha0')]
+    blue_polarizations, yellow_polarizations = None, None
+    if len(cni_fill) == 0:
+        print(f'No CNI measurement for fill {fill_number}')
+    else:
+        blue_polarizations = cni_fill[cni_fill['beam'] == 'blue']['polarization']
+        yellow_polarizations = cni_fill[cni_fill['beam'] == 'yellow']['polarization']
+
+    return blue_polarizations, yellow_polarizations
+
+
+def extract_spindb_pol_val(pol_str):
+    """
+    Extract polarization value from spindb string. Saved as the same number for each bunch.
+    :param pol_str:
+    :return:
+    """
+    return float(pol_str.split(',')[0].replace('[', ''))
 
 
 def add_cni_df_columns(cni_measurements_df):

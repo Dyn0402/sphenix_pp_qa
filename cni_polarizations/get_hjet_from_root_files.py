@@ -26,8 +26,6 @@ def main():
         with uproot.open(root_path) as file:
             yellow_spin_pattern = file['h_polYellow'].to_numpy()[0].tolist()
             blue_spin_pattern = file['h_polBlue'].to_numpy()[0].tolist()
-            print('Yellow:', yellow_spin_pattern)
-            print('Blue:', blue_spin_pattern)
             results = file['h_results']
             res_vals, res_errs = results.values(), results.errors()
             yellow_an, blue_an = res_vals[6], res_vals[7]
