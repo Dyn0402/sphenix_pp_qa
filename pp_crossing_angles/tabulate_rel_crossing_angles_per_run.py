@@ -79,9 +79,10 @@ def get_run_crossing_stats(bpm_dir, run_info_path):
     run_info_df = get_run_info(run_info_path)
 
     # Load all crossing angle data and sort by time
-    data = pd.DataFrame()
+    data = []
     for file_name in os.listdir(bpm_dir):
-        data = data.append(read_crossing_angle(f'{bpm_dir}{file_name}'))
+        data.append(read_crossing_angle(f'{bpm_dir}{file_name}'))
+    data = pd.concat(data)
     data = data.sort_values('time')
 
     # Iterate through runs and get crossing angle stats
