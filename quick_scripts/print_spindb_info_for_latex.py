@@ -10,7 +10,6 @@ Created as sphenix_pp_qa/print_spindb_info_for_latex
 
 import subprocess
 
-
 def main():
     # Database connection details
     dbname = "spinDB"
@@ -31,9 +30,16 @@ def main():
     # Split the output into lines
     lines = result.stdout.strip().split("\n")
 
-    # Start LaTeX table code
-    latex_code = "\\begin{table}[ht]\n\\centering\n\\begin{tabular}{|l|l|}\n\\hline\n"
-    latex_code += "Column Name & Data Type \\\\ \\hline\n"
+    # Start LaTeX table code using longtable for page splitting
+    latex_code = """\\begin{longtable}{|l|l|l|}
+\\caption{Table structure of '""" + table_name + """'} \\
+\\hline
+Column Name & Data Type & Notes \\\\ \\hline
+\\endfirsthead
+\\hline
+Column Name & Data Type & Notes \\\\ \\hline
+\\endhead
+"""
 
     # Process each line of the result
     for line in lines:
@@ -44,14 +50,15 @@ def main():
         column_name, data_type = line  # Output columns are separated by '|'
         column_name = column_name.strip()
         data_type = data_type.strip()
-        latex_code += f"{column_name} & {data_type} \\\\ \\hline\n"
+        latex_code += f"{column_name} & {data_type} & \\\\ \\hline\n"
 
-    latex_code += "\\end{tabular}\n\\caption{Table structure of '" + table_name + "'}\n\\end{table}"
+    latex_code += """\\end{longtable}
+\\end{document}
+"""
 
     # Print the LaTeX code
     print(latex_code)
     print('donzo')
-
 
 if __name__ == '__main__':
     main()
