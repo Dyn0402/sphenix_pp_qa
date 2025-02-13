@@ -14,7 +14,7 @@ import subprocess
 def main():
     # Database connection details
     dbname = "spinDB"
-    table_name = "your_table_name"
+    table_name = "spin"
 
     # SQL query to get column names and data types
     query = f"""
