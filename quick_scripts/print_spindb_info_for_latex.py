@@ -37,7 +37,11 @@ def main():
 
     # Process each line of the result
     for line in lines:
-        column_name, data_type = line.split("|")  # Output columns are separated by '|'
+        line = line.strip().split("|")
+        if len(line) != 2:
+            print(f"Skipping line: {line}")
+            continue
+        column_name, data_type = line  # Output columns are separated by '|'
         column_name = column_name.strip()
         data_type = data_type.strip()
         latex_code += f"{column_name} & {data_type} \\\\ \\hline\n"
