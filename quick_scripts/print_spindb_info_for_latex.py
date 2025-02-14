@@ -32,7 +32,8 @@ def main():
 
     # Start LaTeX table code using longtable for page splitting
     latex_code = """\\begin{longtable}{|l|l|l|}
-\\caption{Table structure of '""" + table_name + """'} \\
+\\caption{Table structure of '""" + table_name + """'} \\\\
+\\label{tab:spindb_cols} \\\\
 \\hline
 Column Name & Data Type & Notes \\\\ \\hline
 \\endfirsthead
@@ -48,13 +49,11 @@ Column Name & Data Type & Notes \\\\ \\hline
             print(f"Skipping line: {line}")
             continue
         column_name, data_type = line  # Output columns are separated by '|'
-        column_name = column_name.strip()
+        column_name = column_name.strip().replace('_', '\\_')
         data_type = data_type.strip()
         latex_code += f"{column_name} & {data_type} & \\\\ \\hline\n"
 
-    latex_code += """\\end{longtable}
-\\end{document}
-"""
+    latex_code += "\\end{longtable}"
 
     # Print the LaTeX code
     print(latex_code)
