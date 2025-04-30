@@ -18,7 +18,7 @@ import pytz
 def main():
     """
     Pulls run information from the sPHENIX run database and writes it to a CSV file.
-    Must be connected to campus network proxy to access the database.
+    Must be connected to campus network proxy to access the database --> ssh sph-tunnel to 3128 batch3.phy.bnl.gov:3128
     :return:
     """
     # Define the rl1 and rl2 variables
@@ -30,6 +30,11 @@ def main():
 
     # Construct the URL with the parameters
     base_url = "http://www.sphenix-intra.bnl.gov:7815/cgi-bin/run_info.py"
+    proxies = {
+        "http": "http://localhost:3128",
+        "https": "http://localhost:3128"
+    }
+
     params = {
         "time_range": 0,
         "type": "any",
@@ -38,9 +43,8 @@ def main():
         "rl1": rl1,
         "rl2": rl2
     }
-
     # Send a GET request to the URL
-    response = requests.get(base_url, params=params)
+    response = requests.get(base_url, params=params, proxies=proxies)
 
     # Check if the request was successful
     if response.status_code == 200:

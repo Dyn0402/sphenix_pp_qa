@@ -67,7 +67,7 @@ def get_from_site_csv():
 
 def get_from_site_user():
     url = 'https://www.cnipol.bnl.gov/fills/?rp=24&fn=&ft=&be=&mode=1&sb=Select'
-    reread = False  # If True, reread file even if it exists
+    reread = True  # If True, reread file even if it exists
     html_file_path = 'cnipol_fills_user.html'
     df_out_path = 'cnipol_fills_user.csv'
 
@@ -95,9 +95,10 @@ def get_from_site_user():
     df = extract_user_data_to_dataframe(html_content)
 
     df = convert_df_user(df)
+    print(df)
 
     # Save the DataFrame to a CSV file
-    df.to_csv(df_out_path, index=False)
+    # df.to_csv(df_out_path, index=False)
 
 
 def fetch_html(url, proxy=None, params=None, headers=None):
