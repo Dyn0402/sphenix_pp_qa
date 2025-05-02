@@ -31,6 +31,7 @@ def main():
                      LEFT JOIN (SELECT runnumber, MAX(mtime) AS latest_mtime \
                                 FROM filelist \
                                 GROUP BY runnumber) f ON r.runnumber = f.runnumber
+            WHERE r.runnumber > 21920
             ORDER BY r.runnumber; \
             """
 
