@@ -15,7 +15,7 @@ def main():
     first_run = 40000
     last_run = 53000
     runtype = 'physics'
-    max_duration = 60 * 60 * 4  # in seconds
+    max_duration = 60 * 60 * 3  # in seconds
     update_database = False  # WARNING: If True, this will update the database! Otherwise, just print proposed changes.
 
     # Database connection parameters
@@ -53,10 +53,12 @@ def main():
             """, (runnumber,))
             result = cursor.fetchone()
 
+            fallback = False
             if result and result[0]:
                 chosen_mtime = result[0]
             else:
                 # Fallback: latest mtime
+                fallback = True
                 cursor.execute("""
                     SELECT mtime FROM filelist
                     WHERE runnumber = %s
@@ -92,7 +94,10 @@ def main():
                 cursor.execute("""
                     UPDATE run SET ertimestamp = %s WHERE runnumber = %s;
                 """, (chosen_mtime, runnumber))
-            print(f"Updated run {runnumber} with ertimestamp {chosen_mtime} (duration {format_duration(duration)})")
+            fallback_str = " no GL1, " if fallback else " "
+            duration_str = format_duration(duration)
+            update_str = 'Updated ' if update_database else 'Proposed update --> '
+            print(f"{update_str}run {runnumber} with{fallback_str}ertimestamp {chosen_mtime} (duration {duration_str})")
 
         connection.commit()
         print("Valid ertimestamps updated successfully.")

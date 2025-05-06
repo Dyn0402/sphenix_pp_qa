@@ -66,8 +66,10 @@ def analyze_run_db_csv():
 
 
 def analyze_full_db_csvs():
-    run_csv_path = "/home/dylan/Desktop/pp_qa/run.csv"
-    filelist_csv_path = "/home/dylan/Desktop/pp_qa/filelist.csv"
+    # base_path = "/home/dylan/Desktop/pp_qa/"
+    base_path = "/local/home/dn277127/Bureau/pp_qa/"
+    run_csv_path = f"{base_path}run.csv"
+    filelist_csv_path = f"{base_path}filelist.csv"
     run_df = pd.read_csv(run_csv_path)
     filelist_df = pd.read_csv(filelist_csv_path)
 
@@ -117,7 +119,7 @@ def analyze_full_db_csvs():
                  xycoords='axes fraction', fontsize=12, bbox=dict(boxstyle='round', fc='white', ec='black', lw=1))
     plt.title('Histogram of Time Difference between Latest Filelist mtimes and Run End Times')
     plt.xlabel('ertimestamp - latest_mtime (seconds)')
-    plt.ylabel('Frequency')
+    plt.ylabel('Runs')
     plt.legend()
     plt.yscale('log')
     plt.tight_layout()
