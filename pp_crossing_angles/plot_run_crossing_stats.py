@@ -31,8 +31,8 @@ def main():
         datetime(2024, 10, 1, 8),
     ]
 
-    # plot_from_run_crossing_csv(crossing_angle_period_boundaries)
-    plot_from_spin_db_csv(crossing_angle_period_boundaries)
+    plot_from_run_crossing_csv(crossing_angle_period_boundaries)
+    # plot_from_spin_db_csv(crossing_angle_period_boundaries)
 
     print('donzo')
 
@@ -57,7 +57,7 @@ def plot_from_run_crossing_csv(crossing_angle_period_boundaries):
     plot_num_events_hist(plot_df, cut_val=events_cut)
     plot_run_duration_hist(plot_df, cut_val=duration_cut)
     plot_run_duration_num_events_2d(plot_df)
-    plt.show()
+    # plt.show()
 
     plot_df = plot_df[(plot_df['num_events'] > events_cut) & (plot_df['duration'] > duration_cut)]
     plot_crossing_vs_time(plot_df, crossing_angle_period_boundaries)
@@ -340,7 +340,7 @@ def plot_crossing_vs_time(run_crossing_df, period_boundaries=None, ls='-', verni
     :param vernier_scan_runs:
     :return:
     """
-    run_crossing_df.loc[:, 'mid'] = pd.to_datetime(run_crossing_df['mid'])
+    run_crossing_df['mid'] = pd.to_datetime(run_crossing_df['mid'], errors='coerce')
     # Ensure the 'mid' column in the DataFrame is timezone-naive
     run_crossing_df['mid'] = run_crossing_df['mid'].dt.tz_localize(None)
     if vernier_scan_runs:
@@ -394,8 +394,8 @@ def plot_crossing_vs_time(run_crossing_df, period_boundaries=None, ls='-', verni
                     color='green', label='Relative Crossing Angle', marker='.', markersize=3, ls='None')
     # Plot the relative_min and relative_max as lighter error bars
     ax_rel.errorbar(run_crossing_df['mid'], run_crossing_df['relative_mean'],
-                    yerr=[run_crossing_df['relative_mean'] - run_crossing_df['relative_min'],
-                          run_crossing_df['relative_max'] - run_crossing_df['relative_mean']],
+                    yerr=[np.abs(run_crossing_df['relative_mean'] - run_crossing_df['relative_min']),
+                          np.abs(run_crossing_df['relative_max'] - run_crossing_df['relative_mean'])],
                     color='green', alpha=0.2, ls='None')
     if vernier_scan_runs:
         ax_rel.plot(df_vernier_scan['mid'], df_vernier_scan['relative_mean'], color='red', ls='None', marker='x',

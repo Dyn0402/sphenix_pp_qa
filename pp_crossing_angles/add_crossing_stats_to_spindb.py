@@ -23,13 +23,15 @@ def main():
     # Database connection details
     db_name = 'spinDB'
 
+    qa_level = 0
+
     # Update the database with the crossing angle values
-    update_database(db_name, run_crossing_df)
+    update_database(db_name, run_crossing_df, qa_level)
 
     print('donzo')
 
 
-def update_database(db_name, df):
+def update_database(db_name, df, qa_level=None):
     # Loop through the DataFrame rows
     for index, row in df.iterrows():
         run_number = row['run']
@@ -54,7 +56,7 @@ def update_database(db_name, df):
             crossanglestd = {crossing_angle_std},
             crossanglemin = {crossing_angle_min},
             crossanglemax = {crossing_angle_max}
-        WHERE runnumber = {run_number};
+        WHERE runnumber = {run_number} AND qa_level = {qa_level};
         """
 
         # Command to execute via psql

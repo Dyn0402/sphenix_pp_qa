@@ -11,7 +11,7 @@ Created as sphenix_pp_qa/tabulate_rel_crossing_angles_per_run
 
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 
@@ -101,7 +101,7 @@ def get_run_crossing_stats(bpm_dir, run_info_path):
             'run': row['Runnumber'],
             'start': row['Start'],
             'end': row['End'],
-            'mid': row['Start'] + (row['End'] - row['Start']) / 2,
+            'mid': row['Start'] + timedelta(seconds=round(((row['End'] - row['Start']) / 2).total_seconds())),
             'duration': (row['End'] - row['Start']).total_seconds(),
             'run_type': row['Type'],
             'num_events': row['Events']
