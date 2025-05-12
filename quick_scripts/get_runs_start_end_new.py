@@ -10,13 +10,13 @@ Created as sphenix_pp_qa/get_runs_start_end_new
 
 import psycopg2
 import pandas as pd
-from datetime import timedelta
+import pytz
 
 
 def main():
     first_run = 40000
-    last_run = 53000
-    runtype = 'physics'
+    last_run = 55000
+    runtype = 'physics'  # 'physics'/'cosmic'/etc or None for all types
     max_duration = 60 * 60 * 3  # in seconds
 
     host = "sphnxdaqdbreplica1.sdcc.bnl.gov"
@@ -37,12 +37,20 @@ def main():
         cursor = connection.cursor()
 
         # Get all runs in range (even those with ertimestamp set, we recalculate)
-        cursor.execute("""
-            SELECT runnumber, runtype, brtimestamp, eventsinrun 
-            FROM run 
-            WHERE runnumber BETWEEN %s AND %s AND marked_invalid != 1 AND runtype = %s;
-        """, (first_run, last_run, runtype))
-        run_list = cursor.fetchall()
+        if runtype:
+            cursor.execute("""
+                SELECT runnumber, runtype, brtimestamp, eventsinrun 
+                FROM run 
+                WHERE runnumber BETWEEN %s AND %s AND marked_invalid != 1 AND runtype = %s;
+            """, (first_run, last_run, runtype))
+            run_list = cursor.fetchall()
+        else:
+            cursor.execute("""
+                SELECT runnumber, runtype, brtimestamp, eventsinrun 
+                FROM run 
+                WHERE runnumber BETWEEN %s AND %s AND marked_invalid != 1;
+            """, (first_run, last_run))
+            run_list = cursor.fetchall()
 
         for runnumber, runtype, brtimestamp, eventsinrun in run_list:
             # Skip if brtimestamp is missing
@@ -82,12 +90,16 @@ def main():
                 continue
 
             # Collect data
+            eastern = pytz.timezone("US/Eastern")
+            brtimestamp = eastern.localize(brtimestamp)
+            endtime = eastern.localize(endtime)
             run_length = str(endtime - brtimestamp)
+
             rows.append({
                 'Runnumber': runnumber,
                 'Type': runtype,
-                'Start': brtimestamp,
-                'End': endtime,
+                'Start': brtimestamp.strftime('%Y-%m-%d %H:%M:%S%z')[:-2] + ':' + brtimestamp.strftime('%z')[-2:],
+                'End': endtime.strftime('%Y-%m-%d %H:%M:%S%z')[:-2] + ':' + endtime.strftime('%z')[-2:],
                 'Run Length': run_length,
                 'Events': eventsinrun
             })
@@ -102,8 +114,8 @@ def main():
     # Write to CSV
     df = pd.DataFrame(rows)
     df = df.sort_values(by='Runnumber')
-    df.to_csv('corrected_run_data.csv', index=False)
-    print("CSV written to 'corrected_run_data.csv'")
+    df.to_csv('corrected_run_info.csv', index=False)
+    print("CSV written to 'corrected_run_info.csv'")
 
 
 if __name__ == '__main__':
