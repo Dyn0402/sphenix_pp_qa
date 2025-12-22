@@ -22,9 +22,11 @@ from tabulate_rel_crossing_angles_per_run import read_crossing_angle, get_run_in
 def main():
     bpm_dir = 'bpm_measurements/'
     run_info_path = 'run_info.csv'
+    month = None  # either month or None to include all months
+    # month = 'August'
 
     run_info_df = get_run_info(run_info_path)
-    crossing_angles_df = get_bpm_crossing_angles(bpm_dir)
+    crossing_angles_df = get_bpm_crossing_angles(bpm_dir, month)
     # plot_crossing_angles_vs_time(crossing_angles_df)
     check_time_shift(crossing_angles_df, run_info_df)
     plt.show()
@@ -90,7 +92,7 @@ def check_time_shift(crossing_angles_df, run_info_df):
     fig.tight_layout()
 
 
-def get_bpm_crossing_angles(bpm_dir):
+def get_bpm_crossing_angles(bpm_dir, month=None):
     """
     Load all crossing angle data from bpm_dir and sort by time.
     :return:
@@ -98,6 +100,8 @@ def get_bpm_crossing_angles(bpm_dir):
     # Load all crossing angle data and sort by time
     data = []
     for file_name in os.listdir(bpm_dir):
+        if month and month.lower() not in file_name.lower():
+            continue
         data.append(read_crossing_angle(f'{bpm_dir}{file_name}'))
     data = pd.concat(data)
     data = data.sort_values('time')
